@@ -49,6 +49,9 @@ class DashboardOverview extends Component
                                                 ->get();
 
         $this->loadSalesChartData();
+
+        // Ensure chart initializes on first render after login/redirect
+        $this->dispatch('render-sales-chart', data: $this->salesChartData);
     }
 
     private function loadSalesChartData()

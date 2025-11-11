@@ -39,69 +39,46 @@
 
         <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg p-6 mb-8">
             <h2 class="text-2xl font-bold mb-4 dark:text-gray-100">Tren Penjualan (30 Hari Terakhir)</h2>
-            <div id="salesChart"></div>
+            <div id="salesChart" wire:ignore></div>
 
         @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
         <script>
-            document.addEventListener('livewire:load', function () {
-                const salesData = @json($salesChartData);
-
+            function renderSalesChart(salesData) {
+                const el = document.querySelector("#salesChart");
+                if (!el || !window.ApexCharts) return;
                 const options = {
-                    chart: {
-                        type: 'area',
-                        height: 350,
-                        toolbar: {
-                            show: false
-                        }
-                    },
-                    series: [{
-                        name: 'Penjualan',
-                        data: salesData.series
-                    }],
+                    chart: { type: 'area', height: 350, toolbar: { show: false } },
+                    series: [{ name: 'Penjualan', data: salesData.series }],
                     xaxis: {
                         categories: salesData.labels,
                         type: 'datetime',
-                        labels: {
-                            style: {
-                                colors: '#9CA3AF'
-                            }
-                        }
+                        labels: { style: { colors: '#9CA3AF' } }
                     },
                     yaxis: {
                         labels: {
-                            style: {
-                                colors: '#9CA3AF'
-                            },
+                            style: { colors: '#9CA3AF' },
                             formatter: function (value) {
                                 return "Rp " + new Intl.NumberFormat('id-ID').format(value);
                             }
                         }
                     },
-                    dataLabels: {
-                        enabled: false
-                    },
-                    stroke: {
-                        curve: 'smooth'
-                    },
+                    dataLabels: { enabled: false },
+                    stroke: { curve: 'smooth' },
                     tooltip: {
-                        x: {
-                            format: 'dd MMMM yyyy'
-                        },
-                        y: {
-                            formatter: function (value) {
-                                return "Rp " + new Intl.NumberFormat('id-ID').format(value);
-                            }
-                        },
+                        x: { format: 'dd MMMM yyyy' },
+                        y: { formatter: (value) => "Rp " + new Intl.NumberFormat('id-ID').format(value) },
                         theme: 'dark'
                     },
-                    noData: {
-                        text: 'Tidak ada data penjualan untuk ditampilkan.'
-                    }
+                    noData: { text: 'Tidak ada data penjualan untuk ditampilkan.' }
                 };
-
-                const chart = new ApexCharts(document.querySelector("#salesChart"), options);
+                const chart = new ApexCharts(el, options);
                 chart.render();
+            }
+            document.addEventListener('livewire:init', () => {
+                Livewire.on('render-sales-chart', (event) => {
+                    renderSalesChart(event.data);
+                });
             });
         </script>
         @endpush
@@ -177,66 +154,6 @@
             @endforelse
         </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const salesData = @json($salesChartData);
-
-                const options = {
-                    chart: {
-                        type: 'area',
-                        height: 350,
-                        toolbar: {
-                            show: false
-                        }
-                    },
-                    series: [{
-                        name: 'Penjualan',
-                        data: salesData.series
-                    }],
-                    xaxis: {
-                        categories: salesData.labels,
-                        type: 'datetime',
-                        labels: {
-                            style: {
-                                colors: '#9CA3AF'
-                            }
-                        }
-                    },
-                    yaxis: {
-                        labels: {
-                            style: {
-                                colors: '#9CA3AF'
-                            },
-                            formatter: function (value) {
-                                return "Rp " + new Intl.NumberFormat('id-ID').format(value);
-                            }
-                        }
-                    },
-                    dataLabels: {
-                        enabled: false
-                    },
-                    stroke: {
-                        curve: 'smooth'
-                    },
-                    tooltip: {
-                        x: {
-                            format: 'dd MMMM yyyy'
-                        },
-                        y: {
-                            formatter: function (value) {
-                                return "Rp " + new Intl.NumberFormat('id-ID').format(value);
-                            }
-                        },
-                        theme: 'dark'
-                    },
-                    noData: {
-                        text: 'Tidak ada data penjualan untuk ditampilkan.'
-                    }
-                };
-
-                const chart = new ApexCharts(document.querySelector("#salesChart"), options);
-                chart.render();
-            });
-        </script>
+        
     </div>
 </div>
