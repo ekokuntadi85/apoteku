@@ -4,57 +4,59 @@
         @include('partials.head')
         @fluxAppearance
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+	<body class="min-h-screen bg-white dark:bg-zinc-800">
+		<flux:sidebar sticky stashable class="relative border-e border-zinc-200 bg-gradient-to-b from-indigo-50 via-fuchsia-50 to-rose-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
             
             
-            <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
+			<a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse py-3 px-2 rounded-lg hover:bg-white/60 dark:hover:bg-zinc-800/60 transition-colors" wire:navigate>
                 <x-app-logo />
             </a>
 
-            <flux:navlist variant="outline">
+			<flux:navlist variant="outline" class="px-2">
                 @can('access-dashboard')
-                <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')">{{ __('Dashboard') }}</flux:navlist.item>
+				<flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors">
+					{{ __('Dashboard') }}
+				</flux:navlist.item>
                 @endcan
                 
-                <flux:navlist.group :heading="__('Master Data')" expandable :expanded="false">
-                    <flux:navlist.item icon="layout-grid" :href="route('products.index')" :current="request()->routeIs('products.index')" wire:navigate>Daftar Produk</flux:navlist.item>
-                    <flux:navlist.item icon="clipboard-document-list" :href="route('categories.index')" :current="request()->routeIs('categories.index')" wire:navigate>Kategori</flux:navlist.item>
-                    <flux:navlist.item icon="clipboard-document" :href="route('units.index')" :current="request()->routeIs('units.index')" wire:navigate>Satuan</flux:navlist.item>
-                    <flux:navlist.item icon="building-office-2" :href="route('suppliers.index')" :current="request()->routeIs('suppliers.*')" wire:navigate>Supplier</flux:navlist.item>
-                    <flux:navlist.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" wire:navigate>Customer</flux:navlist.item>
+				<flux:navlist.group :heading="__('Master Data')" expandable :expanded="false" class="mt-2">
+					<flux:navlist.item icon="layout-grid" :href="route('products.index')" :current="request()->routeIs('products.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Produk</flux:navlist.item>
+					<flux:navlist.item icon="clipboard-document-list" :href="route('categories.index')" :current="request()->routeIs('categories.index')" class="rounded-lg hover:bg-sky-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Kategori</flux:navlist.item>
+					<flux:navlist.item icon="clipboard-document" :href="route('units.index')" :current="request()->routeIs('units.index')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Satuan</flux:navlist.item>
+					<flux:navlist.item icon="building-office-2" :href="route('suppliers.index')" :current="request()->routeIs('suppliers.*')" class="rounded-lg hover:bg-violet-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Supplier</flux:navlist.item>
+					<flux:navlist.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Customer</flux:navlist.item>
                 </flux:navlist.group>
 
-                <flux:navlist.group :heading="__('Transaksi')" expandable :expanded="false">
-                    <flux:navlist.item icon="credit-card" :href="route('purchases.index')" :current="request()->routeIs('purchases.*')" wire:navigate>Daftar Pembelian</flux:navlist.item>
-                    <flux:navlist.item icon="currency-dollar" :href="route('transactions.index')" :current="request()->routeIs('transactions.*')" wire:navigate>Daftar Penjualan</flux:navlist.item>
-                    <flux:navlist.item icon="computer-desktop" :href="route('pos.index')" :current="request()->routeIs('pos.index')" wire:navigate>POS</flux:navlist.item>
-                    <flux:navlist.item icon="banknotes" :href="route('accounts-receivable.index')" :current="request()->routeIs('accounts-receivable.index')" wire:navigate>Daftar Invoice Kredit</flux:navlist.item>
-                    <flux:navlist.item icon="adjustments-horizontal" :href="route('stock-opname.index')" :current="request()->routeIs('stock-opname.index')" wire:navigate>Stok Opname</flux:navlist.item>
+				<flux:navlist.group :heading="__('Transaksi')" expandable :expanded="false" class="mt-2">
+					<flux:navlist.item icon="credit-card" :href="route('purchases.index')" :current="request()->routeIs('purchases.*')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Pembelian</flux:navlist.item>
+					<flux:navlist.item icon="currency-dollar" :href="route('transactions.index')" :current="request()->routeIs('transactions.*')" class="rounded-lg hover:bg-fuchsia-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Penjualan</flux:navlist.item>
+					<flux:navlist.item icon="computer-desktop" :href="route('pos.index')" :current="request()->routeIs('pos.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>POS</flux:navlist.item>
+					<flux:navlist.item icon="banknotes" :href="route('accounts-receivable.index')" :current="request()->routeIs('accounts-receivable.index')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Invoice Kredit</flux:navlist.item>
+					<flux:navlist.item icon="adjustments-horizontal" :href="route('stock-opname.index')" :current="request()->routeIs('stock-opname.index')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Stok Opname</flux:navlist.item>
                 </flux:navlist.group>
 
-                <flux:navlist.group :heading="__('Laporan')" expandable :expanded="false">
-                    <flux:navlist.item icon="chart-bar" :href="route('reports.sales')" :current="request()->routeIs('reports.sales')" wire:navigate>Laporan Penjualan</flux:navlist.item>
-                    <flux:navlist.item icon="calendar-days" :href="route('reports.expiring-stock')" :current="request()->routeIs('reports.expiring-stock')" wire:navigate>Laporan Stok Kedaluwarsa</flux:navlist.item>
-                    <flux:navlist.item icon="arrow-down-circle" :href="route('reports.low-stock')" :current="request()->routeIs('reports.low-stock')" wire:navigate>Laporan Stok Menipis</flux:navlist.item>
-                    <flux:navlist.item icon="document-text" :href="route('stock-card.index')" :current="request()->routeIs('stock-card.index')" wire:navigate>Kartu Stok</flux:navlist.item>
-                    <flux:navlist.item icon="clipboard-document-list" :href="route('kartu-monitoring-suhu')" :current="request()->routeIs('kartu-monitoring-suhu')" wire:navigate>Kartu Monitoring Suhu</flux:navlist.item>
+				<flux:navlist.group :heading="__('Laporan')" expandable :expanded="false" class="mt-2">
+					<flux:navlist.item icon="chart-bar" :href="route('reports.sales')" :current="request()->routeIs('reports.sales')" class="rounded-lg hover:bg-sky-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Penjualan</flux:navlist.item>
+					<flux:navlist.item icon="calendar-days" :href="route('reports.expiring-stock')" :current="request()->routeIs('reports.expiring-stock')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Stok Kedaluwarsa</flux:navlist.item>
+					<flux:navlist.item icon="arrow-down-circle" :href="route('reports.low-stock')" :current="request()->routeIs('reports.low-stock')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Stok Menipis</flux:navlist.item>
+					<flux:navlist.item icon="document-text" :href="route('stock-card.index')" :current="request()->routeIs('stock-card.index')" class="rounded-lg hover:bg-fuchsia-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Kartu Stok</flux:navlist.item>
+					<flux:navlist.item icon="clipboard-document-list" :href="route('kartu-monitoring-suhu')" :current="request()->routeIs('kartu-monitoring-suhu')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Kartu Monitoring Suhu</flux:navlist.item>
                 </flux:navlist.group>
 
                 @can('manage-users')
-                <flux:navlist.group :heading="__('Pengaturan Sistem')" expandable :expanded="false">
-                    <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.index')" wire:navigate>Manajemen Pengguna</flux:navlist.item>
-                    <flux:navlist.item icon="server" :href="route('database.backup')" :current="request()->routeIs('database.backup')" wire:navigate>Manajemen Backup</flux:navlist.item>
-                    <flux:navlist.item icon="server" :href="route('database.restore')" :current="request()->routeIs('database.restore')" wire:navigate>Restore Database</flux:navlist.item>
-                    <flux:navlist.item icon="shield-check" :href="route('stock-consistency.index')" :current="request()->routeIs('stock-consistency.index')" wire:navigate>Integritas Stok</flux:navlist.item>
+				<flux:navlist.group :heading="__('Pengaturan Sistem')" expandable :expanded="false" class="mt-2">
+					<flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.index')" class="rounded-lg hover:bg-violet-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Manajemen Pengguna</flux:navlist.item>
+					<flux:navlist.item icon="server" :href="route('database.backup')" :current="request()->routeIs('database.backup')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Manajemen Backup</flux:navlist.item>
+					<flux:navlist.item icon="server" :href="route('database.restore')" :current="request()->routeIs('database.restore')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Restore Database</flux:navlist.item>
+					<flux:navlist.item icon="shield-check" :href="route('stock-consistency.index')" :current="request()->routeIs('stock-consistency.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Integritas Stok</flux:navlist.item>
                 </flux:navlist.group>
                 @endcan
             </flux:navlist>
 
             <flux:spacer />
 
-            <flux:navlist variant="outline">
+			<flux:navlist variant="outline">
                 {{-- <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
                 {{ __('Repository') }}
                 </flux:navlist.item>
