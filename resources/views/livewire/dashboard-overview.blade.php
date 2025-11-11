@@ -44,42 +44,71 @@
         @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
         <script>
-            function renderSalesChart(salesData) {
-                const el = document.querySelector("#salesChart");
-                if (!el || !window.ApexCharts) return;
-                const options = {
-                    chart: { type: 'area', height: 350, toolbar: { show: false } },
-                    series: [{ name: 'Penjualan', data: salesData.series }],
-                    xaxis: {
-                        categories: salesData.labels,
-                        type: 'datetime',
-                        labels: { style: { colors: '#9CA3AF' } }
-                    },
-                    yaxis: {
-                        labels: {
-                            style: { colors: '#9CA3AF' },
-                            formatter: function (value) {
-                                return "Rp " + new Intl.NumberFormat('id-ID').format(value);
+            (function () {
+                const initialSalesData = @json($salesChartData);
+
+                function buildOptions(salesData) {
+                    return {
+                        chart: { type: 'area', height: 350, toolbar: { show: false } },
+                        series: [{ name: 'Penjualan', data: salesData.series }],
+                        xaxis: {
+                            categories: salesData.labels,
+                            type: 'datetime',
+                            labels: { style: { colors: '#9CA3AF' } }
+                        },
+                        yaxis: {
+                            labels: {
+                                style: { colors: '#9CA3AF' },
+                                formatter: function (value) {
+                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
+                                }
                             }
+                        },
+                        dataLabels: { enabled: false },
+                        stroke: { curve: 'smooth' },
+                        tooltip: {
+                            x: { format: 'dd MMMM yyyy' },
+                            y: { formatter: (v) => 'Rp ' + new Intl.NumberFormat('id-ID').format(v) },
+                            theme: 'dark'
+                        },
+                        noData: { text: 'Tidak ada data penjualan untuk ditampilkan.' }
+                    };
+                }
+
+                function renderWhenReady(salesData, attempt = 0) {
+                    const el = document.querySelector('#salesChart');
+                    const ready = !!(el && window.ApexCharts);
+                    if (!ready) {
+                        if (attempt < 20) { // retry up to ~2s
+                            return setTimeout(() => renderWhenReady(salesData, attempt + 1), 100);
                         }
-                    },
-                    dataLabels: { enabled: false },
-                    stroke: { curve: 'smooth' },
-                    tooltip: {
-                        x: { format: 'dd MMMM yyyy' },
-                        y: { formatter: (value) => "Rp " + new Intl.NumberFormat('id-ID').format(value) },
-                        theme: 'dark'
-                    },
-                    noData: { text: 'Tidak ada data penjualan untuk ditampilkan.' }
-                };
-                const chart = new ApexCharts(el, options);
-                chart.render();
-            }
-            document.addEventListener('livewire:init', () => {
-                Livewire.on('render-sales-chart', (event) => {
-                    renderSalesChart(event.data);
+                        return;
+                    }
+                    // Clear existing content to avoid duplicate charts on re-render
+                    el.innerHTML = '';
+                    const chart = new ApexCharts(el, buildOptions(salesData));
+                    chart.render();
+                }
+
+                // Attach Livewire listener even if framework already initialized
+                (function attachLivewireListener(attempt = 0) {
+                    if (window.Livewire && typeof Livewire.on === 'function') {
+                        Livewire.on('render-sales-chart', (event) => {
+                            renderWhenReady(event.data);
+                        });
+                    } else if (attempt < 50) {
+                        setTimeout(() => attachLivewireListener(attempt + 1), 100);
+                    }
+                })();
+
+                // Render immediately with initial data when this view is loaded (covers SPA navigate)
+                renderWhenReady(initialSalesData);
+
+                // Also render on Livewire SPA navigations to this view
+                document.addEventListener('livewire:navigated', () => {
+                    renderWhenReady(initialSalesData);
                 });
-            });
+            })();
         </script>
         @endpush
         </div>
