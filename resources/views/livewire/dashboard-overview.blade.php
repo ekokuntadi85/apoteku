@@ -107,7 +107,7 @@
         @endpush
         </div>
 
-        <h2 class="text-2xl font-bold mb-4 mt-10 dark:text-gray-100">Pembelian Mendekati Jatuh Tempo</h2>
+        <h2 class="text-2xl font-bold mb-4 mt-10 dark:text-gray-100">10 Pembelian Terbaru</h2>
 
         <!-- Desktop Table View -->
         <div class="hidden md:block shadow overflow-hidden border-b border-gray-200 sm:rounded-lg dark:border-gray-700">
@@ -117,36 +117,50 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Nomor Invoice</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Supplier</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Total Harga</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Tanggal Jatuh Tempo</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Tanggal</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Status</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                    @forelse($upcomingUnpaidPurchases as $purchase)
+                    @forelse($latestPurchases as $purchase)
                     <tr class="dark:hover:bg-gray-700">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $purchase->invoice_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $purchase->supplier->name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
+                            <a href="{{ route('purchases.show', $purchase) }}" class="text-blue-600 hover:underline dark:text-blue-400">{{ $purchase->invoice_number }}</a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
+                            <a href="{{ route('purchases.show', $purchase) }}" class="hover:underline">{{ $purchase->supplier->name }}</a>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap currency-cell text-gray-900 dark:text-gray-200">
-                                    <span class="currency-symbol">Rp</span>
-                                    <span class="currency-value">{{ number_format($purchase->total_price, 0) }}</span>
-                                </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ \Carbon\Carbon::parse($purchase->due_date)->format('Y-m-d') }}</td>
+                            <a href="{{ route('purchases.show', $purchase) }}" class="hover:underline">
+                                <span class="currency-symbol">Rp</span>
+                                <span class="currency-value">{{ number_format($purchase->total_price, 0) }}</span>
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
+                            <a href="{{ route('purchases.show', $purchase) }}" class="hover:underline">{{ \Carbon\Carbon::parse($purchase->created_at)->format('Y-m-d') }}</a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
+                            <a href="{{ route('purchases.show', $purchase) }}" class="hover:underline capitalize">
+                                {{ $purchase->payment_status }}
+                            </a>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400">Tidak ada pembelian mendekati jatuh tempo.</td>
+                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400">Tidak ada data pembelian.</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <!-- Mobile Card View for Upcoming Unpaid Purchases -->
+        <!-- Mobile Card View for Latest Purchases -->
         <div class="block md:hidden space-y-4">
-            @forelse($upcomingUnpaidPurchases as $purchase)
-            <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+            @forelse($latestPurchases as $purchase)
+            <a href="{{ route('purchases.show', $purchase) }}" class="block bg-white dark:bg-gray-700 shadow-md rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Invoice: {{ $purchase->invoice_number }}</span>
-                    <span class="text-xs text-gray-600 dark:text-gray-300">Jatuh Tempo: {{ \Carbon\Carbon::parse($purchase->due_date)->format('Y-m-d') }}</span>
+                    <span class="text-xs text-gray-600 dark:text-gray-300">Tanggal: {{ \Carbon\Carbon::parse($purchase->created_at)->format('Y-m-d') }}</span>
                 </div>
                 <div class="text-gray-700 dark:text-gray-200 mb-1">
                     <span class="font-medium">Supplier:</span> {{ $purchase->supplier->name }}
@@ -154,9 +168,12 @@
                 <div class="text-gray-700 dark:text-gray-200">
                     <span class="font-medium">Total:</span> Rp {{ number_format($purchase->total_price, 0) }}
                 </div>
-            </div>
+                <div class="text-gray-700 dark:text-gray-200">
+                    <span class="font-medium">Status:</span> <span class="capitalize">{{ $purchase->payment_status }}</span>
+                </div>
+            </a>
             @empty
-            <p class="text-gray-600 dark:text-gray-400 text-center">Tidak ada pembelian mendekati jatuh tempo.</p>
+            <p class="text-gray-600 dark:text-gray-400 text-center">Tidak ada data pembelian.</p>
             @endforelse
         </div>
 
