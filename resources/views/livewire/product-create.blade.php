@@ -1,6 +1,6 @@
 <div class="container mx-auto p-4 dark:bg-gray-800 dark:text-gray-200">
-    <div class="max-w-2xl mx-auto bg-white dark:bg-gray-700 shadow-md rounded-lg p-6">
-        <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Tambah Produk Baru</h2>
+    <div class="max-w-2xl mx-auto bg-white/70 dark:bg-gray-800/60 shadow-md rounded-xl p-6 border border-zinc-200/60 dark:border-zinc-700/60 backdrop-blur">
+        <h2 class="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500">Tambah Produk Baru</h2>
 
         <form wire:submit.prevent="save">
             <div class="space-y-6">
@@ -17,10 +17,10 @@
                 </div>
 
                 <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Satuan Produk</h3>
+                    <h3 class="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">Satuan Produk</h3>
 
                     @foreach($productUnits as $index => $unit)
-                        <div wire:key="unit-{{ $index }}" class="p-4 border border-gray-200 rounded-md dark:border-gray-600">
+                        <div wire:key="unit-{{ $index }}" class="p-4 border border-gray-200/70 rounded-xl dark:border-gray-600/60 bg-white/80 dark:bg-gray-700/70 backdrop-blur">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label for="productUnits.{{ $index }}.name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Satuan</label>
@@ -63,7 +63,7 @@
                             </div>
                             @if(!$unit['is_base_unit'])
                                 <div class="mt-4 text-right">
-                                    <button type="button" wire:click="removeUnit({{ $index }})" class="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600">
+                                    <button type="button" wire:click="removeUnit({{ $index }})" class="inline-flex items-center px-3 py-1 border border-transparent shadow-sm text-sm font-semibold rounded-full text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 dark:bg-rose-600 dark:hover:bg-rose-700">
                                         Hapus Satuan
                                     </button>
                                 </div>
@@ -72,7 +72,7 @@
                     @endforeach
 
                     <div class="flex justify-end space-x-2 mt-4">
-                        <button type="button" wire:click="addUnit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-green-500 dark:hover:bg-green-600">
+                        <button type="button" wire:click="addUnit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-semibold rounded-md text-white bg-emerald-500 hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400 dark:bg-emerald-600 dark:hover:bg-emerald-700">
                             <x-heroicon-o-plus class="-ml-1 mr-2 h-5 w-5" />
                             Tambah Satuan
                         </button>
@@ -92,8 +92,8 @@
             </div>
 
             <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-                <a href="{{ route('products.index') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 dark:hover:bg-gray-500 mt-4 sm:mt-0">Batal</a>
-                <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">
+                <a href="{{ route('products.index') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 dark:hover:bg-gray-500 mt-4 sm:mt-0">Batal</a>
+                <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-fuchsia-500 hover:from-indigo-600 hover:to-fuchsia-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400">
                     Simpan Produk
                 </button>
             </div>
