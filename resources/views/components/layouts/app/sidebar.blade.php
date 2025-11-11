@@ -14,42 +14,140 @@
             </a>
 
 			<flux:navlist variant="outline" class="px-2">
-                @can('access-dashboard')
-				<flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors">
-					{{ __('Dashboard') }}
+				@can('access-dashboard')
+				<flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('dashboard') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-indigo-400' : '' }}">
+					<span class="inline-flex items-center gap-2">
+						{{ __('Dashboard') }}
+						<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Home</span>
+					</span>
 				</flux:navlist.item>
                 @endcan
                 
 				<flux:navlist.group :heading="__('Master Data')" expandable :expanded="false" class="mt-2">
-					<flux:navlist.item icon="layout-grid" :href="route('products.index')" :current="request()->routeIs('products.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Produk</flux:navlist.item>
-					<flux:navlist.item icon="clipboard-document-list" :href="route('categories.index')" :current="request()->routeIs('categories.index')" class="rounded-lg hover:bg-sky-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Kategori</flux:navlist.item>
-					<flux:navlist.item icon="clipboard-document" :href="route('units.index')" :current="request()->routeIs('units.index')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Satuan</flux:navlist.item>
-					<flux:navlist.item icon="building-office-2" :href="route('suppliers.index')" :current="request()->routeIs('suppliers.*')" class="rounded-lg hover:bg-violet-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Supplier</flux:navlist.item>
-					<flux:navlist.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Customer</flux:navlist.item>
+					<flux:navlist.item icon="layout-grid" :href="route('products.index')" :current="request()->routeIs('products.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('products.*') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-emerald-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Daftar Produk
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Data</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="clipboard-document-list" :href="route('categories.index')" :current="request()->routeIs('categories.index')" class="rounded-lg hover:bg-sky-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('categories.*') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-sky-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Kategori
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Data</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="clipboard-document" :href="route('units.index')" :current="request()->routeIs('units.index')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('units.*') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-amber-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Satuan
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Data</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="building-office-2" :href="route('suppliers.index')" :current="request()->routeIs('suppliers.*')" class="rounded-lg hover:bg-violet-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('suppliers.*') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-violet-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Supplier
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Relasi</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="users" :href="route('customers.index')" :current="request()->routeIs('customers.*')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('customers.*') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-rose-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Customer
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">Relasi</span>
+						</span>
+					</flux:navlist.item>
                 </flux:navlist.group>
 
 				<flux:navlist.group :heading="__('Transaksi')" expandable :expanded="false" class="mt-2">
-					<flux:navlist.item icon="credit-card" :href="route('purchases.index')" :current="request()->routeIs('purchases.*')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Pembelian</flux:navlist.item>
-					<flux:navlist.item icon="currency-dollar" :href="route('transactions.index')" :current="request()->routeIs('transactions.*')" class="rounded-lg hover:bg-fuchsia-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Penjualan</flux:navlist.item>
-					<flux:navlist.item icon="computer-desktop" :href="route('pos.index')" :current="request()->routeIs('pos.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>POS</flux:navlist.item>
-					<flux:navlist.item icon="banknotes" :href="route('accounts-receivable.index')" :current="request()->routeIs('accounts-receivable.index')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Invoice Kredit</flux:navlist.item>
-					<flux:navlist.item icon="adjustments-horizontal" :href="route('stock-opname.index')" :current="request()->routeIs('stock-opname.index')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Stok Opname</flux:navlist.item>
+					<flux:navlist.item icon="credit-card" :href="route('purchases.index')" :current="request()->routeIs('purchases.*')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('purchases.*') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-indigo-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Daftar Pembelian
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Transaksi</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="currency-dollar" :href="route('transactions.index')" :current="request()->routeIs('transactions.*')" class="rounded-lg hover:bg-fuchsia-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('transactions.*') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-fuchsia-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Daftar Penjualan
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300">Transaksi</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="computer-desktop" :href="route('pos.index')" :current="request()->routeIs('pos.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('pos.index') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-emerald-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							POS
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Kasir</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="banknotes" :href="route('accounts-receivable.index')" :current="request()->routeIs('accounts-receivable.index')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('accounts-receivable.index') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-rose-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Daftar Invoice Kredit
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">Piutang</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="adjustments-horizontal" :href="route('stock-opname.index')" :current="request()->routeIs('stock-opname.index')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('stock-opname.index') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-amber-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Stok Opname
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Stok</span>
+						</span>
+					</flux:navlist.item>
                 </flux:navlist.group>
 
 				<flux:navlist.group :heading="__('Laporan')" expandable :expanded="false" class="mt-2">
-					<flux:navlist.item icon="chart-bar" :href="route('reports.sales')" :current="request()->routeIs('reports.sales')" class="rounded-lg hover:bg-sky-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Penjualan</flux:navlist.item>
-					<flux:navlist.item icon="calendar-days" :href="route('reports.expiring-stock')" :current="request()->routeIs('reports.expiring-stock')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Stok Kedaluwarsa</flux:navlist.item>
-					<flux:navlist.item icon="arrow-down-circle" :href="route('reports.low-stock')" :current="request()->routeIs('reports.low-stock')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Stok Menipis</flux:navlist.item>
-					<flux:navlist.item icon="document-text" :href="route('stock-card.index')" :current="request()->routeIs('stock-card.index')" class="rounded-lg hover:bg-fuchsia-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Kartu Stok</flux:navlist.item>
-					<flux:navlist.item icon="clipboard-document-list" :href="route('kartu-monitoring-suhu')" :current="request()->routeIs('kartu-monitoring-suhu')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Kartu Monitoring Suhu</flux:navlist.item>
+					<flux:navlist.item icon="chart-bar" :href="route('reports.sales')" :current="request()->routeIs('reports.sales')" class="rounded-lg hover:bg-sky-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('reports.sales') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-sky-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Laporan Penjualan
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">Report</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="calendar-days" :href="route('reports.expiring-stock')" :current="request()->routeIs('reports.expiring-stock')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('reports.expiring-stock') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-indigo-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Laporan Stok Kedaluwarsa
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Report</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="arrow-down-circle" :href="route('reports.low-stock')" :current="request()->routeIs('reports.low-stock')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('reports.low-stock') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-amber-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Laporan Stok Menipis
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Report</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="document-text" :href="route('stock-card.index')" :current="request()->routeIs('stock-card.index')" class="rounded-lg hover:bg-fuchsia-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('stock-card.index') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-fuchsia-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Kartu Stok
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300">Report</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="clipboard-document-list" :href="route('kartu-monitoring-suhu')" :current="request()->routeIs('kartu-monitoring-suhu')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('kartu-monitoring-suhu') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-rose-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Kartu Monitoring Suhu
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">Report</span>
+						</span>
+					</flux:navlist.item>
                 </flux:navlist.group>
 
                 @can('manage-users')
 				<flux:navlist.group :heading="__('Pengaturan Sistem')" expandable :expanded="false" class="mt-2">
-					<flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.index')" class="rounded-lg hover:bg-violet-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Manajemen Pengguna</flux:navlist.item>
-					<flux:navlist.item icon="server" :href="route('database.backup')" :current="request()->routeIs('database.backup')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Manajemen Backup</flux:navlist.item>
-					<flux:navlist.item icon="server" :href="route('database.restore')" :current="request()->routeIs('database.restore')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Restore Database</flux:navlist.item>
-					<flux:navlist.item icon="shield-check" :href="route('stock-consistency.index')" :current="request()->routeIs('stock-consistency.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Integritas Stok</flux:navlist.item>
+					<flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.index')" class="rounded-lg hover:bg-violet-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('users.index') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-violet-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Manajemen Pengguna
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Admin</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="server" :href="route('database.backup')" :current="request()->routeIs('database.backup')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('database.backup') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-indigo-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Manajemen Backup
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Admin</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="server" :href="route('database.restore')" :current="request()->routeIs('database.restore')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('database.restore') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-rose-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Restore Database
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">Admin</span>
+						</span>
+					</flux:navlist.item>
+					<flux:navlist.item icon="shield-check" :href="route('stock-consistency.index')" :current="request()->routeIs('stock-consistency.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors {{ request()->routeIs('stock-consistency.index') ? 'bg-white/70 dark:bg-zinc-800/60 border-l-4 border-emerald-400' : '' }}" wire:navigate>
+						<span class="inline-flex items-center gap-2">
+							Integritas Stok
+							<span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Admin</span>
+						</span>
+					</flux:navlist.item>
                 </flux:navlist.group>
                 @endcan
             </flux:navlist>
