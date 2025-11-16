@@ -94,10 +94,9 @@
 <body>
     <div class="receipt-container">
         <div class="header">
-            <h1>Apotek Muazara</h1>
-            <p>Desa Cermee RT. 15 No.1</p>
-            <p>Cermee, Bondowoso</p>
-            <p>Telp: 0857-0895-4067</p>
+            <h1>{{ config('settings.app_name', 'Apotek Muazara') }}</h1>
+            <p>{{ config('settings.address', 'Desa Cermee RT. 15 No.1, Cermee, Bondowoso') }}</p>
+            <p>Telp: {{ config('settings.phone_number', '0857-0895-4067') }}</p>
         </div>
 
         <div class="meta-info">

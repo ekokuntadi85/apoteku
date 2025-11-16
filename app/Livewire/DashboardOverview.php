@@ -17,6 +17,8 @@ class DashboardOverview extends Component
     public $salesToday = 0;
     public $visitsToday = 0;
     public $expiringProductsCount = 0;
+    public $salesPercentageChange = 0;
+    public $salesChangeDirection = 'none';
     public $latestTransactions = [];
     public $latestPurchases = [];
     public $salesChartData = ['series' => [], 'labels' => []];
@@ -24,9 +26,28 @@ class DashboardOverview extends Component
     public function mount()
     {
         $today = Carbon::today();
+        $yesterday = Carbon::yesterday();
 
         // Sales Today
         $this->salesToday = Transaction::whereDate('created_at', $today)->sum('total_price');
+
+        // Sales Yesterday for comparison
+        $salesYesterday = Transaction::whereDate('created_at', $yesterday)->sum('total_price');
+
+        if ($salesYesterday > 0) {
+            $this->salesPercentageChange = (($this->salesToday - $salesYesterday) / $salesYesterday) * 100;
+        } else {
+            $this->salesPercentageChange = $this->salesToday > 0 ? 100 : 0;
+        }
+
+        if ($this->salesPercentageChange > 0) {
+            $this->salesChangeDirection = 'up';
+        } elseif ($this->salesPercentageChange < 0) {
+            $this->salesChangeDirection = 'down';
+        } else {
+            $this->salesChangeDirection = 'none';
+        }
+
 
         // Visits Today (Counting each transaction)
         $this->visitsToday = Transaction::whereDate('created_at', $today)->count();

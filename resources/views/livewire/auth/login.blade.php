@@ -1,6 +1,11 @@
 <div class="flex flex-col items-center justify-center min-h-screen p-4">
     <div class="w-full sm:max-w-sm p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700">
-        <x-auth-header :title="__('Login MuazaraApp')" :description="__('Pilih Nama dan masukkan passwordmu')" />
+        @if(config('settings.app_logo_path'))
+            <div class="flex justify-center mb-4">
+                <img src="{{ asset('storage/' . config('settings.app_logo_path')) }}" alt="{{ config('settings.app_name', 'App Logo') }}" class="w-25 h-25 object-contain">
+            </div>
+        @endif
+        <x-auth-header :title="__('Login ' . config('settings.app_name', 'Muazara-App'))" :description="__('Pilih Nama dan masukkan passwordmu')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="mb-4" :status="session('status')" />

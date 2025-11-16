@@ -8,11 +8,20 @@
     <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg p-6">
         <div class="flex flex-col md:flex-row justify-between md:items-start mb-4">
             <div>
-                <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Pembelian #{{ $purchase->invoice_number }}</h2>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500">Pembelian #{{ $purchase->invoice_number }}</h2>
                 <p class="text-md text-gray-500 dark:text-gray-400">Dari: {{ $purchase->supplier->name }}</p>
                 <p class="text-lg font-semibold text-gray-800 dark:text-gray-100 mt-2">Total: Rp {{ number_format($purchase->total_price, 0) }}</p>
-                <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full 
-                    {{ $purchase->payment_status == 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' }}">
+                @php
+                    $status = strtolower($purchase->payment_status);
+                    $badge = match($status) {
+                        'paid','lunas' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 ring-1 ring-emerald-200/50',
+                        'unpaid','belum lunas' => 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 ring-1 ring-rose-200/50',
+                        'partial','sebagian' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 ring-1 ring-amber-200/50',
+                        default => 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 ring-1 ring-zinc-200/50',
+                    };
+                @endphp
+                <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold capitalize {{ $badge }}">
+                    <span class="w-2 h-2 rounded-full @if(in_array($status,['paid','lunas'])) bg-emerald-500 @elseif(in_array($status,['unpaid','belum lunas'])) bg-rose-500 @elseif(in_array($status,['partial','sebagian'])) bg-amber-500 @else bg-zinc-400 @endif"></span>
                     {{ ucfirst($purchase->payment_status) }}
                 </span>
             </div>
@@ -49,8 +58,17 @@
         <div class="mt-4">
             <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Item Pembelian</h3>
             <div class="space-y-4">
+                @php
+                    $gradientClasses = [
+                        'bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20',
+                        'bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20',
+                        'bg-gradient-to-br from-yellow-50/50 to-amber-50/50 dark:from-yellow-900/20 dark:to-amber-900/20',
+                        'bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/20 dark:to-rose-900/20',
+                        'bg-gradient-to-br from-purple-50/50 to-fuchsia-50/50 dark:from-purple-900/20 dark:to-fuchsia-900/20',
+                    ];
+                @endphp
                 @forelse($purchase->productBatches as $item)
-                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                    <div class="{{ $gradientClasses[$loop->index % count($gradientClasses)] }} p-4 rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60">
                         <div class="flex justify-between items-center mb-2">
                             <p class="font-bold text-gray-900 dark:text-white">{{ $item->product->name }}</p>
                             <span class="text-sm text-gray-600 dark:text-gray-400">( {{ $item->batch_number ?: '-' }} )</span>

@@ -9,6 +9,26 @@
                 <div>
                     <p class="text-emerald-600 text-sm dark:text-emerald-300">Penjualan Hari Ini</p>
                     <p class="text-3xl font-extrabold text-emerald-700 dark:text-emerald-300">Rp {{ number_format($salesToday, 0) }}</p>
+                    <div class="flex items-center text-sm mt-1">
+                        @if($salesChangeDirection === 'up')
+                            <span class="flex items-center text-green-500">
+                                <x-heroicon-o-arrow-trending-up class="w-4 h-4 mr-1" />
+                                {{ number_format(abs($salesPercentageChange), 1) }}%
+                            </span>
+                            <span class="text-gray-500 dark:text-gray-400 ml-1">sales performance</span>
+                        @elseif($salesChangeDirection === 'down')
+                            <span class="flex items-center text-red-500">
+                                <x-heroicon-o-arrow-trending-down class="w-4 h-4 mr-1" />
+                                {{ number_format(abs($salesPercentageChange), 1) }}%
+                            </span>
+                            <span class="text-gray-500 dark:text-gray-400 ml-1">sales performance</span>
+                        @else
+                            <span class="flex items-center text-gray-500">
+                                {{ number_format($salesPercentageChange, 1) }}%
+                            </span>
+                             <span class="text-gray-500 dark:text-gray-400 ml-1">sales performance</span>
+                        @endif
+                    </div>
                 </div>
                 <div class="text-emerald-500 text-4xl">
                     <x-heroicon-o-currency-dollar class="w-12 h-12" />
@@ -50,34 +70,50 @@
             (function () {
                 const initialSalesData = @json($salesChartData);
 
-                function buildOptions(salesData) {
+                function getThemeColors() {
+                    const isDarkMode = document.documentElement.classList.contains('dark');
                     return {
-                        chart: { type: 'area', height: 350, toolbar: { show: false }, foreColor: '#9CA3AF' },
-                        colors: ['#6366f1'],
+                        foreColor: isDarkMode ? '#D1D5DB' : '#374151', // gray-300 dark, gray-700 light
+                        axisBorderColor: isDarkMode ? '#4B5563' : '#E5E7EB', // gray-600 dark, gray-200 light
+                        chartColor: '#10b981', // emerald-500
+                        tooltipTheme: isDarkMode ? 'dark' : 'light'
+                    };
+                }
+
+                function buildOptions(salesData, colors) {
+                    return {
+                        chart: {
+                            type: 'area',
+                            height: 350,
+                            toolbar: { show: false },
+                            foreColor: colors.foreColor
+                        },
+                        colors: [colors.chartColor],
                         series: [{ name: 'Penjualan', data: salesData.series }],
                         xaxis: {
                             categories: salesData.labels,
                             type: 'datetime',
-                            labels: { style: { colors: '#9CA3AF' } },
-                            axisBorder: { color: '#E5E7EB' },
-                            axisTicks: { color: '#E5E7EB' }
+                            labels: { style: { colors: colors.foreColor } },
+                            axisBorder: { color: colors.axisBorderColor },
+                            axisTicks: { color: colors.axisBorderColor }
                         },
                         yaxis: {
                             labels: {
-                                style: { colors: '#9CA3AF' },
+                                style: { colors: colors.foreColor },
                                 formatter: function (value) {
                                     return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
                                 }
                             },
-                            axisBorder: { color: '#E5E7EB' },
-                            axisTicks: { color: '#E5E7EB' }
+                            axisBorder: { show: false },
+                            axisTicks: { show: false },
                         },
                         fill: {
                             type: 'gradient',
                             gradient: {
+                                shade: colors.tooltipTheme,
                                 shadeIntensity: 1,
-                                opacityFrom: 0.4,
-                                opacityTo: 0.05,
+                                opacityFrom: 0.7,
+                                opacityTo: 0.2,
                                 stops: [0, 90, 100]
                             }
                         },
@@ -86,12 +122,17 @@
                         tooltip: {
                             x: { format: 'dd MMMM yyyy' },
                             y: { formatter: (v) => 'Rp ' + new Intl.NumberFormat('id-ID').format(v) },
-                            theme: 'dark'
+                            theme: colors.tooltipTheme
+                        },
+                        grid: {
+                            borderColor: colors.axisBorderColor,
+                            strokeDashArray: 4
                         },
                         noData: { text: 'Tidak ada data penjualan untuk ditampilkan.' }
                     };
                 }
 
+                let chartInstance = null;
                 function renderWhenReady(salesData, attempt = 0) {
                     const el = document.querySelector('#salesChart');
                     const ready = !!(el && window.ApexCharts);
@@ -101,31 +142,58 @@
                         }
                         return;
                     }
-                    // Clear existing content to avoid duplicate charts on re-render
-                    el.innerHTML = '';
-                    const chart = new ApexCharts(el, buildOptions(salesData));
-                    chart.render();
+
+                    if (chartInstance) {
+                        chartInstance.destroy();
+                    }
+
+                    const colors = getThemeColors();
+                    chartInstance = new ApexCharts(el, buildOptions(salesData, colors));
+                    chartInstance.render();
                 }
 
-                // Attach Livewire listener even if framework already initialized
+                // Attach Livewire listener
                 (function attachLivewireListener(attempt = 0) {
                     if (window.Livewire && typeof Livewire.on === 'function') {
                         Livewire.on('render-sales-chart', (event) => {
-                            renderWhenReady(event.data);
+                            // Use optional chaining and nullish coalescing
+                            renderWhenReady(event?.data ?? initialSalesData);
                         });
                     } else if (attempt < 50) {
                         setTimeout(() => attachLivewireListener(attempt + 1), 100);
                     }
                 })();
 
-                // Render immediately with initial data when this view is loaded (covers SPA navigate)
+
+                // Initial render
                 renderWhenReady(initialSalesData);
 
-                // Also render on Livewire SPA navigations to this view
+                // Re-render on SPA navigation
                 document.addEventListener('livewire:navigated', () => {
                     renderWhenReady(initialSalesData);
                 });
+
+                // Re-render on theme change
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.attributeName === 'class') {
+                            renderWhenReady(initialSalesData);
+                        }
+                    });
+                });
+                observer.observe(document.documentElement, { attributes: true });
+
             })();
+        </script>
+        <script>
+            // Make table rows clickable
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('tr[data-href]').forEach(row => {
+                    row.addEventListener('click', () => {
+                        window.location.href = row.dataset.href;
+                    });
+                });
+            });
         </script>
         @endpush
         </div>
@@ -155,27 +223,25 @@
                             default => 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 ring-1 ring-zinc-200/50',
                         };
                     @endphp
-                    <tr class="hover:bg-indigo-50/60 dark:hover:bg-zinc-800/70 transition-colors">
+                    <tr class="hover:bg-indigo-50/60 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer" data-href="{{ route('purchases.show', $purchase) }}">
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
-                            <a href="{{ route('purchases.show', $purchase) }}" class="text-blue-600 hover:underline dark:text-blue-400">{{ $purchase->invoice_number }}</a>
+                            <span class="text-blue-600 dark:text-blue-400">{{ $purchase->invoice_number }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
-                            <a href="{{ route('purchases.show', $purchase) }}" class="hover:underline">{{ $purchase->supplier->name }}</a>
+                            <span>{{ $purchase->supplier->name }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap currency-cell text-gray-900 dark:text-gray-200">
-                            <a href="{{ route('purchases.show', $purchase) }}" class="hover:underline">
-                                <span class="currency-symbol">Rp</span>
-                                <span class="currency-value">{{ number_format($purchase->total_price, 0) }}</span>
-                            </a>
+                            <span class="currency-symbol">Rp</span>
+                            <span class="currency-value">{{ number_format($purchase->total_price, 0) }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
-                            <a href="{{ route('purchases.show', $purchase) }}" class="hover:underline">{{ \Carbon\Carbon::parse($purchase->created_at)->format('Y-m-d') }}</a>
+                            <span>{{ \Carbon\Carbon::parse($purchase->created_at)->format('Y-m-d') }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <a href="{{ route('purchases.show', $purchase) }}" class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold capitalize {{ $badge }}">
+                            <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold capitalize {{ $badge }}">
                                 <span class="w-2 h-2 rounded-full @if(in_array($status,['paid','lunas'])) bg-emerald-500 @elseif(in_array($status,['unpaid','belum lunas'])) bg-rose-500 @elseif(in_array($status,['partial','sebagian'])) bg-amber-500 @else bg-zinc-400 @endif"></span>
                                 {{ $purchase->payment_status }}
-                            </a>
+                            </span>
                         </td>
                     </tr>
                     @empty

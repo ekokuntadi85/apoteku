@@ -22,3 +22,5 @@ yarn-error.log
 /.vscode
 /.zed
 .docker/db_data
+.gemini/
+gha-creds-*.json

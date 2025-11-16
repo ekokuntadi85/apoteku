@@ -44,8 +44,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <h3>APOTEK MUAZARA</h3>
-            <p>Desa Cermee RT. 15 No.1 Bondowoso</p>
+            <h3>{{ config('settings.app_name', 'APOTEK MUAZARA') }}</h3>
+            <p>{{ config('settings.address', 'Desa Cermee RT. 15 No.1 Bondowoso') }}</p>
+            <p>{{ config('settings.phone_number', '') }}</p>
         </div>
 
         <div class="line"></div>
