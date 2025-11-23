@@ -25,11 +25,6 @@ jobs:
       - name: Debug StockOpnameDetailFactory After Checkout
         run: cat database/factories/StockOpnameDetailFactory.php
 
-      - name: Remove and Recopy StockOpnameDetailFactory
-        run: |
-          rm database/factories/StockOpnameDetailFactory.php
-          cp ${{ github.workspace }}/database/factories/StockOpnameDetailFactory.php database/factories/StockOpnameDetailFactory.php
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
