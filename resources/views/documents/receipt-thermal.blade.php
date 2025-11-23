@@ -171,8 +171,26 @@
 
     <script>
         window.onload = function() {
+            // Trigger print dialog
             window.print();
         }
+
+        // Auto-close after print dialog is closed
+        window.onafterprint = function() {
+            window.close();
+        };
+
+        // Fallback for browsers that don't support onafterprint
+        // Also handles case when user cancels print
+        var mediaQueryList = window.matchMedia('print');
+        mediaQueryList.addListener(function(mql) {
+            if (!mql.matches) {
+                // User finished printing or cancelled
+                setTimeout(function() {
+                    window.close();
+                }, 100);
+            }
+        });
     </script>
 </body>
 </html>

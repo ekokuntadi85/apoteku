@@ -5,7 +5,7 @@
         @fluxAppearance
     </head>
 	<body class="min-h-screen bg-white dark:bg-zinc-800">
-		<flux:sidebar sticky stashable class="relative border-e border-zinc-200 bg-gradient-to-b from-indigo-50 via-fuchsia-50 to-rose-50 dark:border-zinc-700 dark:bg-gradient-to-b dark:from-zinc-900 dark:to-zinc-800">
+		<flux:sidebar sticky stashable class="relative border-e border-zinc-200 bg-gradient-to-b from-sky-100 via-indigo-100 to-purple-200 dark:border-zinc-700 dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
             
             

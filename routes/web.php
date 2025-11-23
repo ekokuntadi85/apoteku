@@ -22,6 +22,7 @@ use App\Livewire\TransactionCreate;
 use App\Livewire\TransactionShow;
 use App\Livewire\TransactionEdit;
 use App\Livewire\PointOfSale;
+use App\Livewire\PointOfSaleNew;
 use App\Livewire\AccountsReceivable;
 use App\Livewire\InvoiceCreate;
 use App\Livewire\SalesReportCenter;
@@ -89,7 +90,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/transactions/{transaction}/edit', TransactionEdit::class)->name('transactions.edit');
         
         // Point of Sale Module
-        Route::get('/pos', PointOfSale::class)->name('pos.index');
+        Route::get('/pos', PointOfSaleNew::class)->name('pos.index');
+        Route::get('/pos-new', PointOfSaleNew::class)->name('pos.new');
         
         // Accounts Receivable Module
         Route::get('/accounts-receivable', AccountsReceivable::class)->name('accounts-receivable.index');
