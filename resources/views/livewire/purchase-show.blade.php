@@ -34,7 +34,18 @@
                 @endcan
                 @can('delete-purchase')
                 @if ($purchase->payment_status === 'unpaid')
-                    <button wire:click="markAsPaid()" wire:confirm="Tandai lunas?" class="w-full md:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">Tandai Lunas</button>
+                    <button 
+                        x-data="{ 
+                            async markPaid() {
+                                if (confirm('Tandai lunas?')) {
+                                    await $wire.markAsPaid();
+                                }
+                            }
+                        }"
+                        @click="markPaid()"
+                        class="w-full md:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
+                        Tandai Lunas
+                    </button>
                 @endif
                 @endcan
             </div>

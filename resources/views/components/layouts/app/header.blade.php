@@ -107,6 +107,24 @@
             <flux:spacer />
 
             <flux:navlist variant="outline">
+                <!-- User Info for Mobile -->
+                <flux:navlist.group :heading="auth()->user()->name">
+                    <flux:navlist.item icon="cog" :href="route('settings.profile')" wire:navigate>
+                        {{ __('Settings') }}
+                    </flux:navlist.item>
+                    
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <flux:navlist.item as="button" type="submit" icon="arrow-right-start-on-rectangle">
+                            {{ __('Log Out') }}
+                        </flux:navlist.item>
+                    </form>
+                </flux:navlist.group>
+            </flux:navlist>
+
+            <flux:separator />
+
+            <flux:navlist variant="outline">
                 <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
                     {{ __('Repository') }}
                 </flux:navlist.item>
