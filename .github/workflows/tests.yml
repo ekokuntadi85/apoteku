@@ -71,4 +71,4 @@ jobs:
           composer dump-autoload --optimize
 
       - name: Run Tests
-        run: php artisan test --parallel --coverage
+        run: php artisan test
