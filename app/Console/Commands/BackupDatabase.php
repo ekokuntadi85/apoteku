@@ -20,7 +20,7 @@ class BackupDatabase extends Command
      *
      * @var string
      */
-    protected $description = 'Membuat backup database dan menyimpannya secara lokal di storage/app/backups';
+    protected $description = 'Membuat backup database dan menyimpannya secara lokal di storage/app/db-backups';
 
     /**
      * Execute the console command.
@@ -34,7 +34,7 @@ class BackupDatabase extends Command
         $username = $databaseConfig['username'];
         $password = $databaseConfig['password'];
 
-        $backupDir = storage_path('app/backups');
+        $backupDir = storage_path('app/db-backups');
         $backupFileName = 'backup-' . $database . '-' . now()->format('YmdHis') . '.sql';
         $backupPath = $backupDir . DIRECTORY_SEPARATOR . $backupFileName;
 

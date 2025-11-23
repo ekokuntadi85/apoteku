@@ -3,19 +3,21 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Livewire\Attributes\Title;
 
-#[Title('Manajemen Backup Database')]
+#[Title('Manajemen Backup')]
 class DatabaseBackupManager extends Component
 {
     public $backups = [];
+    public $selectedBackups = [];
+    public $selectAll = false;
     public $isBackingUp = false;
 
-    // Direktori tempat backup disimpan (sesuaikan jika berbeda)
-    protected $backupDisk = 'local'; // Atau 's3' jika menggunakan S3
-    protected $backupPath = 'backups'; // Subdirektori di dalam disk
+    protected $backupDisk = 'local';
+    protected $backupPath = 'db-backups'; // Corrected path
 
     public function mount()
     {
@@ -25,52 +27,92 @@ class DatabaseBackupManager extends Component
     public function getBackups()
     {
         $files = Storage::disk($this->backupDisk)->files($this->backupPath);
-        \Illuminate\Support\Facades\Log::info('DatabaseBackupManager: Files found in backup path: ', ['files' => $files]);
 
-        $this->backups = collect($files)->map(function ($file) {
-            return [
-                'name' => str_replace($this->backupPath . '/', '', $file),
-                'size' => Storage::disk($this->backupDisk)->size($file),
-                'last_modified' => Storage::disk($this->backupDisk)->lastModified($file),
-            ];
-        })->sortByDesc('last_modified')->values()->all();
-
-        \Illuminate\Support\Facades\Log::info('DatabaseBackupManager: Backups array after processing: ', ['backups' => $this->backups]);
+        $this->backups = collect($files)
+            ->map(function ($file) {
+                return [
+                    'name' => basename($file),
+                    'size' => Storage::disk($this->backupDisk)->size($file),
+                    'last_modified' => Storage::disk($this->backupDisk)->lastModified($file),
+                ];
+            })
+            ->sortByDesc('last_modified')
+            ->values()
+            ->all();
+        
+        $this->reset(['selectAll', 'selectedBackups']);
     }
 
     public function performBackup()
     {
         $this->isBackingUp = true;
         try {
-            // Jalankan perintah artisan db:backup
             Artisan::call('db:backup');
-            session()->flash('message', 'Backup database berhasil dibuat!');
+            session()->flash('message', 'Backup berhasil dibuat.');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal membuat backup: ' . $e->getMessage());
         } finally {
             $this->isBackingUp = false;
-            $this->getBackups(); // Muat ulang daftar backup
+            $this->getBackups();
         }
     }
 
-    public function downloadBackup($filename)
+    public function downloadBackup($fileName)
     {
-        // Pastikan file ada dan aman untuk diunduh
-        if (Storage::disk($this->backupDisk)->exists($this->backupPath . '/' . $filename)) {
-            return Storage::disk($this->backupDisk)->download($this->backupPath . '/' . $filename);
+        $filePath = $this->backupPath . '/' . $fileName;
+
+        if (!Storage::disk($this->backupDisk)->exists($filePath)) {
+            session()->flash('error', 'File backup tidak ditemukan.');
+            return;
         }
-        session()->flash('error', 'File backup tidak ditemukan.');
+
+        return Storage::disk($this->backupDisk)->download($filePath);
     }
 
-    public function deleteBackup($filename)
+    public function deleteBackup($fileName)
     {
-        // Pastikan file ada dan aman untuk dihapus
-        if (Storage::disk($this->backupDisk)->exists($this->backupPath . '/' . $filename)) {
-            Storage::disk($this->backupDisk)->delete($this->backupPath . '/' . $filename);
-            session()->flash('message', 'File backup berhasil dihapus!');
-            $this->getBackups(); // Muat ulang daftar backup
+        $filePath = $this->backupPath . '/' . $fileName;
+
+        if (Storage::disk($this->backupDisk)->exists($filePath)) {
+            Storage::disk($this->backupDisk)->delete($filePath);
+            session()->flash('message', 'Backup berhasil dihapus.');
         } else {
             session()->flash('error', 'File backup tidak ditemukan.');
+        }
+
+        $this->getBackups();
+    }
+    
+    public function deleteSelectedBackups()
+    {
+        if (empty($this->selectedBackups)) {
+            return;
+        }
+
+        $deletedCount = 0;
+        foreach ($this->selectedBackups as $fileName) {
+            $filePath = $this->backupPath . '/' . $fileName;
+            if (Storage::disk($this->backupDisk)->exists($filePath)) {
+                Storage::disk($this->backupDisk)->delete($filePath);
+                $deletedCount++;
+            }
+        }
+
+        if($deletedCount > 0) {
+            session()->flash('message', "{$deletedCount} backup berhasil dihapus.");
+        } else {
+            session()->flash('error', 'Tidak ada backup yang dihapus. File mungkin tidak ditemukan.');
+        }
+
+        $this->getBackups();
+    }
+
+    public function updatedSelectAll($value)
+    {
+        if ($value) {
+            $this->selectedBackups = collect($this->backups)->pluck('name')->toArray();
+        } else {
+            $this->selectedBackups = [];
         }
     }
 
