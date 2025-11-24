@@ -1,12 +1,27 @@
 <div class="container mx-auto p-4 dark:bg-gray-800 dark:text-gray-200">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Buat Pembelian Baru</h2>
+    </div>
+
+    @if($selectedPoId)
+        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-500 flex justify-between items-center" role="alert">
+            <div>
+                <p class="font-bold">Mode Import Surat Pesanan</p>
+                <p>Anda sedang memproses Surat Pesanan: <strong>{{ $selectedPoNumber }}</strong></p>
+            </div>
+            <button wire:click="cancelSelectedPo" class="text-sm underline hover:text-blue-900 dark:hover:text-blue-200">Batalkan / Reset</button>
+        </div>
+    @endif
+
     @if (session()->has('message'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 dark:bg-green-800 dark:border-green-700 dark:text-green-200" role="alert">
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 dark:bg-green-900 dark:text-green-100 dark:border-green-700" role="alert">
+            <strong class="font-bold">Sukses!</strong>
             <span class="block sm:inline">{{ session('message') }}</span>
         </div>
     @endif
 
     <div class="max-w-4xl mx-auto">
-        <h2 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Catat Pembelian Baru</h2>
+        <!-- The original h2 "Catat Pembelian Baru" is removed as it's replaced by the new one above -->
 
         <!-- Purchase Details -->
         <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg p-6 mb-6">
@@ -103,40 +118,66 @@
             <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Daftar Item</h3>
             <div class="space-y-4">
                 @forelse($purchase_items as $index => $item)
-                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-2">
-                            <p class="font-bold text-gray-900 dark:text-white">{{ $item['product_name'] }}</p>
-                            <span class="text-sm text-gray-600 dark:text-gray-400">( {{ $item['batch_number'] ?: '-' }} )</span>
+                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-900 dark:text-white">{{ $item['product_name'] }}</h4>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Satuan: {{ $item['unit_name'] }}</span>
+                            </div>
+                            <button type="button" wire:click="removeItem({{ $index }})" class="text-red-500 hover:text-red-700 text-sm font-medium">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
                         </div>
-                        <div class="space-y-1 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Tanggal Expire:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">{{ $item['expiration_date'] ? \Carbon\Carbon::parse($item['expiration_date'])->format('d/m/Y') : '-' }}</span>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Batch Number -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">No. Batch</label>
+                                <input type="text" wire:model="purchase_items.{{ $index }}.batch_number" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Nomor Batch">
+                                @error("purchase_items.{$index}.batch_number") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Harga Beli:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">Rp {{ number_format($item['purchase_price'], 0) }}</span>
+
+                            <!-- Expiration Date -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tgl. Kadaluarsa</label>
+                                <input type="date" wire:model="purchase_items.{{ $index }}.expiration_date" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                @error("purchase_items.{$index}.expiration_date") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Stok:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">{{ $item['original_stock_input'] }} {{ $item['unit_name'] }}</span>
+
+                            <!-- Quantity -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Jumlah ({{ $item['unit_name'] }})</label>
+                                <input type="number" wire:model.blur="purchase_items.{{ $index }}.original_stock_input" min="1" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                @error("purchase_items.{$index}.original_stock_input") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
-                            <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">Subtotal:</span>
-                                <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($item['subtotal'], 0) }}</span>
+
+                            <!-- Price -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Satuan</label>
+                                <input type="number" wire:model.blur="purchase_items.{{ $index }}.purchase_price" min="0" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                @error("purchase_items.{$index}.purchase_price") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                         </div>
-                        <div class="text-right mt-2">
-                            <button type="button" wire:click="removeItem({{ $index }})" class="text-red-500 hover:text-red-700 text-sm font-medium">Hapus</button>
+
+                        <div class="mt-3 flex justify-end items-center border-t border-gray-200 dark:border-gray-700 pt-2">
+                            <span class="text-sm text-gray-600 dark:text-gray-400 mr-2">Subtotal:</span>
+                            <span class="font-bold text-lg text-gray-900 dark:text-white">Rp {{ number_format($item['subtotal'], 0) }}</span>
                         </div>
                     </div>
                 @empty
-                    <p class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada item yang ditambahkan.</p>
+                    <div class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Belum ada item yang ditambahkan.</p>
+                    </div>
                 @endforelse
             </div>
-            <div class="mt-6 pt-4 border-t-2 border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">Total</span>
-                <span class="text-xl font-bold text-gray-900 dark:text-white">Rp {{ number_format($total_purchase_price, 0) }}</span>
+            <div class="mt-6 pt-4 border-t-2 border-gray-200 dark:border-gray-600 flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <span class="text-xl font-bold text-gray-900 dark:text-white">Total Pembelian</span>
+                <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">Rp {{ number_format($total_purchase_price, 0) }}</span>
             </div>
         </div>
 
@@ -176,6 +217,8 @@
         </div>
     </div>
     @endif
+
+
 
     @script
     <script>

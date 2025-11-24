@@ -47,6 +47,10 @@ class PurchaseCreate extends Component
     public $newSellingPrice;
     public $itemToAddCache = null;
 
+    // PO Integration
+    public $selectedPoId = null;
+    public $selectedPoNumber = null;
+
     protected $rules = [
         'supplier_id' => 'required|exists:suppliers,id',
         'invoice_number' => 'required|string|max:255|unique:purchases,invoice_number',
@@ -91,19 +95,53 @@ class PurchaseCreate extends Component
         'purchase_price.required' => 'Harga beli wajib diisi.',
         'purchase_price.numeric' => 'Harga beli harus berupa angka.',
         'purchase_price.min' => 'Harga beli tidak boleh negatif.',
-        'stock.required' => 'Kuantitas wajib diisi.', // Changed from Stok to Kuantitas
-        'stock.integer' => 'Kuantitas harus berupa angka bulat.', // Changed from Stok to Kuantitas
-        'stock.min' => 'Kuantitas minimal 1.', // Changed from Stok to Kuantitas
-        'expiration_date.date' => 'Tanggal kadaluarsa tidak valid.',
+        'purchase_items.*.original_stock_input.required' => 'Kuantitas wajib diisi.',
+        'purchase_items.*.original_stock_input.integer' => 'Kuantitas harus berupa angka bulat.',
+        'purchase_items.*.original_stock_input.min' => 'Kuantitas minimal 1.',
+        'purchase_items.*.purchase_price.required' => 'Harga beli wajib diisi.',
+        'purchase_items.*.purchase_price.numeric' => 'Harga beli harus berupa angka.',
+        'purchase_items.*.purchase_price.min' => 'Harga beli tidak boleh negatif.',
+        'purchase_items.*.expiration_date.date' => 'Tanggal kadaluarsa tidak valid.',
         'newSellingPrice.required' => 'Harga jual baru wajib diisi.',
         'newSellingPrice.numeric' => 'Harga jual baru harus berupa angka.',
         'newSellingPrice.min' => 'Harga jual baru tidak boleh lebih rendah dari harga beli.',
     ];
 
+    public function updatedPurchaseItems($value, $key)
+    {
+        $parts = explode('.', $key);
+        if (count($parts) < 2) return;
+
+        $index = $parts[0];
+        $field = $parts[1];
+
+        if (in_array($field, ['original_stock_input', 'purchase_price'])) {
+            // Ensure numeric values
+            $qty = (int)($this->purchase_items[$index]['original_stock_input'] ?? 0);
+            $price = (float)($this->purchase_items[$index]['purchase_price'] ?? 0);
+
+            // Recalculate stock in base units if quantity changed
+            if ($field === 'original_stock_input') {
+                $conversionFactor = $this->purchase_items[$index]['conversion_factor'] ?? 1;
+                $this->purchase_items[$index]['stock'] = $qty * $conversionFactor;
+            }
+
+            // Recalculate subtotal
+            $this->purchase_items[$index]['subtotal'] = $qty * $price;
+
+            $this->calculateTotalPurchasePrice();
+        }
+    }
+
     public function mount()
     {
         $this->purchase_date = now()->format('Y-m-d');
         $this->due_date = now()->addDays(30)->format('Y-m-d');
+
+        $po_id = request()->query('po_id');
+        if ($po_id) {
+            $this->loadPo($po_id);
+        }
     }
 
     public function updatedPurchaseDate($value)
@@ -347,6 +385,12 @@ class PurchaseCreate extends Component
 
             foreach ($this->purchase_items as $item) {
                 $batchNumber = empty($item['batch_number']) ? '-' : $item['batch_number'];
+                
+                // Auto-set expiration date to 1 year from now if empty
+                $expirationDate = empty($item['expiration_date']) 
+                    ? \Carbon\Carbon::now()->addYear()->format('Y-m-d') 
+                    : $item['expiration_date'];
+
                 ProductBatch::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $item['product_id'],
@@ -354,14 +398,73 @@ class PurchaseCreate extends Component
                     'batch_number' => $batchNumber,
                     'purchase_price' => $item['purchase_price'], // Price per selected unit
                     'stock' => $item['stock'], // Stock in base units
-                    'expiration_date' => $item['expiration_date'],
+                    'expiration_date' => $expirationDate,
                 ]);
             }
         });
 
         session()->flash('message', 'Pembelian berhasil dicatat.');
+        
+        // Update PO status if applicable
+        if ($this->selectedPoId) {
+            $po = \App\Models\PurchaseOrder::find($this->selectedPoId);
+            if ($po) {
+                $po->update(['status' => 'completed']);
+            }
+        }
+
         $this->resetAll();
         return redirect()->route('purchases.index');
+    }
+
+    public function loadPo($poId)
+    {
+        $po = \App\Models\PurchaseOrder::with(['details.product', 'details.productUnit'])->find($poId);
+        
+        if (!$po) {
+            return;
+        }
+
+        $this->selectedPoId = $po->id;
+        $this->selectedPoNumber = $po->po_number;
+        $this->supplier_id = $po->supplier_id;
+        
+        // Clear existing items
+        $this->purchase_items = [];
+
+        foreach ($po->details as $detail) {
+            // Calculate stock in base units
+            $stockInBaseUnits = $detail->quantity * $detail->productUnit->conversion_factor;
+            
+            // Set default expiration to 1 year from now if not set
+            $defaultExpiration = \Carbon\Carbon::now()->addYear()->format('Y-m-d');
+
+            $this->purchase_items[] = [
+                'product_id' => $detail->product_id,
+                'product_name' => $detail->product->name,
+                'product_unit_id' => $detail->product_unit_id,
+                'unit_name' => $detail->productUnit->name,
+                'conversion_factor' => $detail->productUnit->conversion_factor,
+                'batch_number' => '', // User must fill this
+                'purchase_price' => $detail->estimated_price ?? 0,
+                'stock' => $stockInBaseUnits,
+                'original_stock_input' => $detail->quantity,
+                'expiration_date' => $defaultExpiration, // Default value
+                'subtotal' => ($detail->estimated_price ?? 0) * $detail->quantity,
+            ];
+        }
+
+        $this->calculateTotalPurchasePrice();
+        session()->flash('message', 'Data dari Surat Pesanan #' . $po->po_number . ' berhasil dimuat. Silakan lengkapi Nomor Batch dan Tanggal Kadaluwarsa.');
+    }
+
+    public function cancelSelectedPo()
+    {
+        $this->selectedPoId = null;
+        $this->selectedPoNumber = null;
+        $this->purchase_items = [];
+        $this->supplier_id = '';
+        $this->calculateTotalPurchasePrice();
     }
 
     private function resetItemForm()
@@ -389,6 +492,8 @@ class PurchaseCreate extends Component
         $this->total_purchase_price = 0;
         $this->purchase_items = [];
         $this->payment_status = 'unpaid';
+        $this->selectedPoId = null;
+        $this->selectedPoNumber = null;
         $this->resetItemForm();
         $this->resetErrorBag();
     }

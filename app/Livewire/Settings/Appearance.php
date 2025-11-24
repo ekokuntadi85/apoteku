@@ -18,6 +18,9 @@ class Appearance extends Component
     public $address;
     public $phoneNumber;
     public $existingLogo;
+    public $pharmacistName;
+    public $siaNumber;
+    public $sipaNumber;
 
     public function mount()
     {
@@ -25,6 +28,9 @@ class Appearance extends Component
         $this->address = config('settings.address');
         $this->phoneNumber = config('settings.phone_number');
         $this->existingLogo = config('settings.app_logo_path');
+        $this->pharmacistName = config('settings.pharmacist_name');
+        $this->siaNumber = config('settings.sia_number');
+        $this->sipaNumber = config('settings.sipa_number');
     }
 
     public function save()
@@ -34,11 +40,17 @@ class Appearance extends Component
             'appLogo' => 'nullable|image|max:1024', // 1MB Max
             'address' => 'nullable|string',
             'phoneNumber' => 'nullable|string|max:20',
+            'pharmacistName' => 'nullable|string|max:255',
+            'siaNumber' => 'nullable|string|max:255',
+            'sipaNumber' => 'nullable|string|max:255',
         ]);
 
         Setting::updateOrCreate(['key' => 'app_name'], ['value' => $this->appName]);
         Setting::updateOrCreate(['key' => 'address'], ['value' => $this->address]);
         Setting::updateOrCreate(['key' => 'phone_number'], ['value' => $this->phoneNumber]);
+        Setting::updateOrCreate(['key' => 'pharmacist_name'], ['value' => $this->pharmacistName]);
+        Setting::updateOrCreate(['key' => 'sia_number'], ['value' => $this->siaNumber]);
+        Setting::updateOrCreate(['key' => 'sipa_number'], ['value' => $this->sipaNumber]);
 
         if ($this->appLogo) {
             $path = $this->appLogo->store('logos', 'public');

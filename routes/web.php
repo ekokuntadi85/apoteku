@@ -81,6 +81,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/purchases/{purchase}', PurchaseShow::class)->name('purchases.show');
         Route::get('/purchases/{purchase}/edit', PurchaseEdit::class)->name('purchases.edit');
     });
+
+    // Purchase Order (Surat Pesanan) Modules
+    Route::middleware(['can:access-purchases'])->group(function () {
+        Route::get('/purchase-orders', \App\Livewire\PurchaseOrderManager::class)->name('purchase-orders.index');
+        Route::get('/purchase-orders/create', \App\Livewire\PurchaseOrderCreate::class)->name('purchase-orders.create');
+        Route::get('/purchase-orders/{purchaseOrder}', \App\Livewire\PurchaseOrderShow::class)->name('purchase-orders.show');
+        Route::get('/purchase-orders/{purchaseOrder}/edit', \App\Livewire\PurchaseOrderEdit::class)->name('purchase-orders.edit');
+        Route::get('/purchase-orders/{purchaseOrder}/print', [\App\Http\Controllers\PurchaseOrderController::class, 'print'])->name('purchase-orders.print');
+    });
     
     // Transaction Modules
     Route::middleware(['can:access-sales'])->group(function () {

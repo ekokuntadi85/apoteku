@@ -28,6 +28,24 @@
                 </div>
 
                 <div>
+                    <label for="pharmacistName" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Nama Apoteker (Pharmacist Name)</label>
+                    <input type="text" wire:model.defer="pharmacistName" id="pharmacistName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
+                    @error('pharmacistName') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label for="siaNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Nomor SIA</label>
+                    <input type="text" wire:model.defer="siaNumber" id="siaNumber" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
+                    @error('siaNumber') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label for="sipaNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Nomor SIPA</label>
+                    <input type="text" wire:model.defer="sipaNumber" id="sipaNumber" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
+                    @error('sipaNumber') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
                     <label for="appLogo" class="block text-sm font-medium text-gray-700 dark:text-gray-200">App Logo</label>
                     <div class="mt-1 flex items-center space-x-4">
                         @if ($existingLogo)

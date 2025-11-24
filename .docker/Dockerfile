@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     libzip \
     libpng \
     jpeg \
+    libwebp \
     libxml2 \
     nodejs \
     npm \
@@ -21,7 +22,9 @@ RUN apk add --no-cache \
     libpng-dev \
     jpeg-dev \
     libxml2-dev \
+    libwebp-dev \
     # Install PHP extensions
+    && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) pdo_mysql zip gd exif bcmath \
     # Clean up build dependencies
     && apk del .build-deps

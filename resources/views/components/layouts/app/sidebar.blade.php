@@ -29,6 +29,7 @@
                 </flux:navlist.group>
 
 				<flux:navlist.group :heading="__('Transaksi')" expandable :expanded="false" class="mt-2">
+					<flux:navlist.item icon="document-text" :href="route('purchase-orders.index')" :current="request()->routeIs('purchase-orders.*')" class="rounded-lg hover:bg-blue-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Surat Pesanan</flux:navlist.item>
 					<flux:navlist.item icon="credit-card" :href="route('purchases.index')" :current="request()->routeIs('purchases.*')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Pembelian</flux:navlist.item>
 					<flux:navlist.item icon="currency-dollar" :href="route('transactions.index')" :current="request()->routeIs('transactions.*')" class="rounded-lg hover:bg-fuchsia-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Penjualan</flux:navlist.item>
 					<flux:navlist.item icon="computer-desktop" :href="route('pos.index')" :current="request()->routeIs('pos.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>POS</flux:navlist.item>
