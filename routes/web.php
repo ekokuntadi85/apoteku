@@ -117,9 +117,10 @@ Route::middleware(['auth'])->group(function () {
     // User Management Module
     Route::middleware(['role:super-admin'])->group(function () {
         Route::get('/users', UserManager::class)->name('users.index');
-            Route::get('database-backups', DatabaseBackupManager::class)->name('database.backup');
-    Route::get('database-restore', DatabaseRestoreManager::class)->name('database.restore');
-    Route::get('stock-consistency-check', \App\Livewire\StockConsistencyCheck::class)->name('stock-consistency.index');
+        Route::get('database-backups', DatabaseBackupManager::class)->name('database.backup');
+        Route::get('database-restore', DatabaseRestoreManager::class)->name('database.restore');
+        Route::get('stock-consistency-check', \App\Livewire\StockConsistencyCheck::class)->name('stock-consistency.index');
+        Route::get('artisan-commands', \App\Livewire\ArtisanCommandManager::class)->name('artisan.commands');
     });
     
     // Stock Opname Module

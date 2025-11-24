@@ -50,6 +50,7 @@
 					<flux:navlist.item icon="server" :href="route('database.backup')" :current="request()->routeIs('database.backup')" class="rounded-lg hover:bg-indigo-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Manajemen Backup</flux:navlist.item>
 					<flux:navlist.item icon="server" :href="route('database.restore')" :current="request()->routeIs('database.restore')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Restore Database</flux:navlist.item>
 					<flux:navlist.item icon="shield-check" :href="route('stock-consistency.index')" :current="request()->routeIs('stock-consistency.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Integritas Stok</flux:navlist.item>
+					<flux:navlist.item icon="command-line" :href="route('artisan.commands')" :current="request()->routeIs('artisan.commands')" class="rounded-lg hover:bg-purple-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Artisan Commands</flux:navlist.item>
                 </flux:navlist.group>
                 @endcan
             </flux:navlist>
