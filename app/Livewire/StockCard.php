@@ -19,8 +19,6 @@ class StockCard extends Component
     public $month; // Filter by month
     public $year; // Filter by year
 
-    public $initialBalance = 0;
-    public $finalBalance = 0; // New property for final balance
     public $startDate; // New property for start date of period
     public $endDate; // New property for end date of period
 
@@ -42,12 +40,11 @@ class StockCard extends Component
                 $this->selectedProductName = $product->name;
             }
         }
-        $this->calculateBalances(); // Calculate balances after product selection
     }
 
     public function updatedSearchProduct($value)
     {
-        if (strlen($this->searchProduct) >= 2) {
+        if (strlen($this->searchProduct) >= 3) {
             $this->productResults = Product::withSum('productBatches as total_stock', 'stock')
                 ->where('name', 'like', '%' . $value . '%')
                 ->orWhere('sku', 'like', '%' . $value . '%')
@@ -66,7 +63,6 @@ class StockCard extends Component
         $this->searchProduct = '';
         $this->productResults = [];
         $this->resetPage();
-        $this->calculateBalances(); // Recalculate balances after product selection
     }
 
     public function updateDates()
@@ -75,42 +71,65 @@ class StockCard extends Component
         $this->endDate = Carbon::create($this->year, $this->month)->endOfMonth()->endOfDay();
     }
 
-    public function calculateBalances()
+    // Computed property for initial balance
+    public function getInitialBalanceProperty()
     {
-        if ($this->selectedProductId) {
-            $this->updateDates(); // Ensure dates are updated before calculation
-
-            // Calculate initial balance (sum of all movements for all batches of this product before startDate)
-            $this->initialBalance = StockMovement::whereHas('productBatch', function($query) {
-                                                $query->where('product_id', $this->selectedProductId);
-                                            })
-                                            ->where('created_at', '<=', $this->startDate->copy()->subSecond())
-                                            ->sum('quantity');
-
-            // Calculate final balance (sum of all movements up to endDate)
-            $this->finalBalance = StockMovement::whereHas('productBatch', function($query) {
-                                                $query->where('product_id', $this->selectedProductId);
-                                            })
-                                            ->where('created_at', '<=', $this->endDate)
-                                            ->sum('quantity');
-        } else {
-            $this->initialBalance = 0;
-            $this->finalBalance = 0;
+        if (!$this->selectedProductId) {
+            return 0;
         }
+
+        return StockMovement::whereHas('productBatch', function($query) {
+                                $query->where('product_id', $this->selectedProductId);
+                            })
+                            ->where('created_at', '<=', $this->startDate->copy()->subSecond())
+                            ->sum('quantity');
+    }
+
+    // Computed property for final balance
+    public function getFinalBalanceProperty()
+    {
+        if (!$this->selectedProductId) {
+            return 0;
+        }
+
+        return StockMovement::whereHas('productBatch', function($query) {
+                                $query->where('product_id', $this->selectedProductId);
+                            })
+                            ->where('created_at', '<=', $this->endDate)
+                            ->sum('quantity');
     }
 
     public function render()
     {
-        $this->calculateBalances(); // Calculate balances before rendering
-
+        // IMPORTANT: Update dates first to ensure they're fresh for this render cycle
+        $this->updateDates();
+        
         $query = StockMovement::with(['productBatch.product'])
                                 ->whereHas('productBatch', function($query) {
                                     $query->where('product_id', $this->selectedProductId);
                                 })
                                 ->whereBetween('created_at', [$this->startDate, $this->endDate]) // Filter movements within period
-                                ->orderBy('created_at', 'desc');
+                                ->orderBy('created_at', 'asc'); // ASC: oldest first, newest last
 
         $stockMovements = $query->paginate(10);
+
+        // Calculate the balance at the START of the current page
+        // This ensures the Saldo column shows the actual cumulative balance, not just per-page balance
+        $balanceBeforeCurrentPage = $this->initialBalance;
+        
+        if ($stockMovements->count() > 0 && $stockMovements->currentPage() > 1) {
+            // Get the first item on current page
+            $firstItemOnPage = $stockMovements->first();
+            
+            // Sum all movements BEFORE this page (from start of period up to but not including first item on page)
+            // Since we're using ASC order, we need movements with created_at < firstItemOnPage
+            $balanceBeforeCurrentPage = $this->initialBalance + StockMovement::whereHas('productBatch', function($query) {
+                                                $query->where('product_id', $this->selectedProductId);
+                                            })
+                                            ->whereBetween('created_at', [$this->startDate, $this->endDate])
+                                            ->where('created_at', '<', $firstItemOnPage->created_at) // All movements BEFORE first item (ASC order)
+                                            ->sum('quantity');
+        }
 
         $years = range(Carbon::now()->year, Carbon::now()->year - 5); // Last 5 years
         $months = [];
@@ -118,26 +137,23 @@ class StockCard extends Component
             $months[$i] = Carbon::create(null, $i, 1)->format('F');
         }
 
-        return view('livewire.stock-card', compact('years', 'months', 'stockMovements'));
+        return view('livewire.stock-card', compact('years', 'months', 'stockMovements', 'balanceBeforeCurrentPage'));
     }
 
     public function updatingSelectedProductId()
     {
         $this->resetPage();
-        $this->calculateBalances(); // Recalculate balances when product changes
     }
 
     public function updatingMonth()
     {
         $this->resetPage();
-        $this->updateDates(); // Update dates first
-        $this->calculateBalances(); // Then recalculate balances
+        $this->updateDates();
     }
 
     public function updatingYear()
     {
         $this->resetPage();
-        $this->updateDates(); // Update dates first
-        $this->calculateBalances(); // Then recalculate balances
+        $this->updateDates();
     }
 }
