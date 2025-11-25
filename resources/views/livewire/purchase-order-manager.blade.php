@@ -10,8 +10,8 @@
             <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 dark:bg-gray-700 ring-1 ring-black ring-opacity-5">
                 <div class="py-1">
                     <a href="{{ route('purchase-orders.create', ['type' => 'general']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">SP Umum</a>
-                    <a href="{{ route('purchase-orders.create', ['type' => 'oot']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">SP OOT</a>
                     <a href="{{ route('purchase-orders.create', ['type' => 'prekursor']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">SP Prekursor</a>
+                    <a href="{{ route('purchase-orders.create', ['type' => 'oot']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">SP OOT</a>
                 </div>
             </div>
         </div>

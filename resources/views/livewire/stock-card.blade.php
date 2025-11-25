@@ -111,6 +111,65 @@
             </div>
         </div>
 
+        <!-- New Advanced Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t dark:border-gray-600">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipe Pergerakan:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.live="filterType" value="PB" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">PB</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Pembelian</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.live="filterType" value="PJ" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">PJ</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Penjualan</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.live="filterType" value="OP" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">OP</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Opname</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.live="filterType" value="ADJ" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="px-2 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">ADJ</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Adjustment</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.live="filterType" value="DEL" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="px-2 py-1 rounded text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">DEL</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Delete</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.live="filterType" value="RES" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">RES</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Restore</span>
+                    </label>
+                </div>
+                @if(!empty($filterType))
+                    <button wire:click="$set('filterType', [])" class="mt-2 text-xs text-red-600 dark:text-red-400 hover:underline">
+                        Clear Filter ({{ count($filterType) }} selected)
+                    </button>
+                @endif
+            </div>
+
+            <div class="mb-4">
+                <label for="filterBatchNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-300">No. Batch:</label>
+                <input 
+                    type="text" 
+                    id="filterBatchNumber" 
+                    wire:model.live.debounce.500ms="filterBatchNumber" 
+                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600" 
+                    placeholder="Cari berdasarkan nomor batch...">
+                @if($filterBatchNumber)
+                    <button wire:click="$set('filterBatchNumber', '')" class="mt-1 text-xs text-red-600 dark:text-red-400 hover:underline">
+                        Clear Filter
+                    </button>
+                @endif
+            </div>
+        </div>
+
         @if($selectedProductId)
             <div class="mt-6 p-4 border-l-4 border-blue-500 rounded-md bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/20 dark:to-transparent">
                 <p class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -128,6 +187,59 @@
                         <span class="text-sm">Saldo Akhir (s/d {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}):</span>
                         <span class="font-bold text-lg {{ $this->finalBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">{{ $this->finalBalance }}</span>
                     </p>
+                </div>
+            </div>
+
+            <!-- Summary Statistics Panel -->
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-green-600 dark:text-green-400 font-medium uppercase">Total Masuk</p>
+                            <p class="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">+{{ number_format($statistics['total_in'], 0, ',', '.') }}</p>
+                        </div>
+                        <svg class="w-10 h-10 text-green-500 dark:text-green-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-red-600 dark:text-red-400 font-medium uppercase">Total Keluar</p>
+                            <p class="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">-{{ number_format($statistics['total_out'], 0, ',', '.') }}</p>
+                        </div>
+                        <svg class="w-10 h-10 text-red-500 dark:text-red-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase">Perubahan Bersih</p>
+                            <p class="text-2xl font-bold {{ $statistics['net_change'] >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300' }} mt-1">
+                                {{ $statistics['net_change'] >= 0 ? '+' : '' }}{{ number_format($statistics['net_change'], 0, ',', '.') }}
+                            </p>
+                        </div>
+                        <svg class="w-10 h-10 text-blue-500 dark:text-blue-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-purple-600 dark:text-purple-400 font-medium uppercase">Total Transaksi</p>
+                            <p class="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-1">{{ number_format($statistics['transaction_count'], 0, ',', '.') }}</p>
+                        </div>
+                        <svg class="w-10 h-10 text-purple-500 dark:text-purple-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
                 </div>
             </div>
         @else

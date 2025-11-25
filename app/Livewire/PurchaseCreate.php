@@ -32,9 +32,11 @@ class PurchaseCreate extends Component
     public $product_id;
     public $batch_number;
     public $purchase_price; // This will be the price per selected unit
+    public $selling_price; // Selling price per selected unit
     public $stock; // This will be the stock in the selected unit
     public $expiration_date;
     public $lastKnownPurchasePrice; // Properti baru untuk menyimpan harga beli terakhir
+    public $lastKnownSellingPrice; // Last known selling price
     public $currentStock = 0; // Properti baru untuk stok saat ini
 
 
@@ -62,6 +64,7 @@ class PurchaseCreate extends Component
         'purchase_items.*.product_unit_id' => 'required|exists:product_units,id', // New rule
         'purchase_items.*.batch_number' => 'nullable|string|max:255',
         'purchase_items.*.purchase_price' => 'required|numeric|min:0',
+        'purchase_items.*.selling_price' => 'required|numeric|min:0',
         'purchase_items.*.stock' => 'required|integer|min:1', // This stock is in base units now
         'purchase_items.*.expiration_date' => 'nullable|date',
     ];
@@ -131,6 +134,46 @@ class PurchaseCreate extends Component
 
             $this->calculateTotalPurchasePrice();
         }
+
+        // Check if purchase price changed and is DIFFERENT from last known price
+        if ($field === 'purchase_price') {
+            $product = Product::find($this->purchase_items[$index]['product_id']);
+            $latestBatch = ProductBatch::where('product_id', $product->id)
+                                        ->latest('created_at')
+                                        ->first();
+            
+            if ($latestBatch) {
+                $conversionFactor = $this->purchase_items[$index]['conversion_factor'] ?? 1;
+                $lastKnownPurchasePrice = $latestBatch->purchase_price;
+                $currentPurchasePriceInBaseUnit = $this->purchase_items[$index]['purchase_price'] / $conversionFactor;
+                
+                if ($currentPurchasePriceInBaseUnit != $lastKnownPurchasePrice) {
+                    // Show warning that purchase price changed
+                    $this->itemToAddCache = $this->purchase_items[$index];
+                    $this->itemToAddCache['index'] = $index;
+                    $this->itemToAddCache['last_purchase_price'] = $lastKnownPurchasePrice;
+                    $this->itemToAddCache['price_change_type'] = $currentPurchasePriceInBaseUnit > $lastKnownPurchasePrice ? 'increase' : 'decrease';
+                    
+                    // Suggest new selling price (at least equal to or higher than purchase price)
+                    $minSellingPrice = $this->purchase_items[$index]['selling_price'];
+                    if ($this->purchase_items[$index]['selling_price'] < $this->purchase_items[$index]['purchase_price']) {
+                        $minSellingPrice = $this->purchase_items[$index]['purchase_price'];
+                    }
+                    $this->newSellingPrice = $minSellingPrice;
+                    $this->showPriceWarningModal = true;
+                }
+            }
+        }
+
+        // Check if selling price is lower than purchase price
+        if ($field === 'selling_price') {
+            $purchasePrice = (float)($this->purchase_items[$index]['purchase_price'] ?? 0);
+            $sellingPrice = (float)($this->purchase_items[$index]['selling_price'] ?? 0);
+            
+            if ($sellingPrice < $purchasePrice) {
+                $this->dispatch('selling-price-warning', 'Harga jual (Rp ' . number_format($sellingPrice, 0) . ') lebih rendah dari harga beli (Rp ' . number_format($purchasePrice, 0) . '). Anda akan menjual dengan rugi!');
+            }
+        }
     }
 
     public function mount()
@@ -188,11 +231,15 @@ class PurchaseCreate extends Component
             if ($baseUnit) {
                 $this->selectedProductUnitId = $baseUnit['id'];
                 $this->purchase_price = $baseUnit['purchase_price']; // Set initial purchase price to base unit's
+                $this->selling_price = $baseUnit['selling_price']; // Set initial selling price
                 $this->selectedProductUnitPurchasePrice = $baseUnit['purchase_price'];
+                $this->lastKnownSellingPrice = $baseUnit['selling_price'];
             } else {
                 $this->selectedProductUnitId = null;
                 $this->purchase_price = '';
+                $this->selling_price = '';
                 $this->selectedProductUnitPurchasePrice = '';
+                $this->lastKnownSellingPrice = null;
             }
 
             // Ambil harga beli terakhir dari batch produk terbaru (dalam satuan dasar)
@@ -223,7 +270,9 @@ class PurchaseCreate extends Component
         $selectedUnit = collect($this->selectedProductUnits)->firstWhere('id', $value);
         if ($selectedUnit) {
             $this->purchase_price = $selectedUnit['purchase_price'];
+            $this->selling_price = $selectedUnit['selling_price'];
             $this->selectedProductUnitPurchasePrice = $selectedUnit['purchase_price'];
+            $this->lastKnownSellingPrice = $selectedUnit['selling_price'];
 
             // If there's a last known base unit purchase price, convert it to the new selected unit's price
             if ($this->lastKnownPurchasePrice !== null) {
@@ -246,42 +295,39 @@ class PurchaseCreate extends Component
         // Calculate stock in base units
         $stockInBaseUnits = $this->stock * $selectedUnit['conversion_factor'];
 
-        // Get the selling price of the base unit for comparison
-        $baseSellingPrice = $product->baseUnit->selling_price ?? 0;
-
         // Calculate the purchase price in base units for comparison
         $purchasePriceInBaseUnit = $this->purchase_price / $selectedUnit['conversion_factor'];
 
-        // Price warning logic: compare selected unit's purchase price (converted to base) with base unit's selling price
-        if ($purchasePriceInBaseUnit > $baseSellingPrice) {
+        // Check if purchase price is DIFFERENT from last known purchase price
+        if ($this->lastKnownPurchasePrice !== null && $purchasePriceInBaseUnit != $this->lastKnownPurchasePrice) {
+            // Warn user and allow them to update selling price
             $expirationDate = $this->expiration_date ?: \Carbon\Carbon::now()->addMonths(6)->format('Y-m-d');
 
             $this->itemToAddCache = [
                 'product_id' => $this->product_id,
                 'product_name' => $product->name,
-                'product_unit_id' => $this->selectedProductUnitId, // Store selected unit ID
-                'unit_name' => $selectedUnit['name'], // Store selected unit name for display
-                'conversion_factor' => $selectedUnit['conversion_factor'], // Store conversion factor
+                'product_unit_id' => $this->selectedProductUnitId,
+                'unit_name' => $selectedUnit['name'],
+                'conversion_factor' => $selectedUnit['conversion_factor'],
                 'batch_number' => $this->batch_number,
-                'purchase_price' => $this->purchase_price, // Price per selected unit
-                'stock' => $stockInBaseUnits, // Stock in base units
-                'original_stock_input' => $this->stock, // Store original input for display
+                'purchase_price' => $this->purchase_price,
+                'selling_price' => $this->selling_price,
+                'stock' => $stockInBaseUnits,
+                'original_stock_input' => $this->stock,
                 'expiration_date' => $expirationDate,
-                'subtotal' => $this->purchase_price * $this->stock, // Subtotal based on selected unit price and input stock
+                'subtotal' => $this->purchase_price * $this->stock,
+                'last_purchase_price' => $this->lastKnownPurchasePrice,
+                'price_change_type' => $purchasePriceInBaseUnit > $this->lastKnownPurchasePrice ? 'increase' : 'decrease',
             ];
 
-            $this->newSellingPrice = $baseSellingPrice; // Suggest updating base unit selling price
+            // Suggest new selling price (at least equal to or higher than purchase price)
+            $minSellingPrice = $this->selling_price;
+            if ($this->selling_price < $this->purchase_price) {
+                $minSellingPrice = $this->purchase_price;
+            }
+            $this->newSellingPrice = $minSellingPrice;
             $this->showPriceWarningModal = true;
             return;
-        }
-
-        // Logika konfirmasi harga lebih rendah (compare base unit purchase price)
-        // Convert current purchase price to base unit equivalent for comparison
-        $currentBasePurchasePrice = $this->purchase_price / $selectedUnit['conversion_factor'];
-
-        if ($this->lastKnownPurchasePrice !== null && $currentBasePurchasePrice < $this->lastKnownPurchasePrice) {
-            $this->dispatch('confirm-lower-price', 'Harga beli per satuan dasar yang diinputkan (' . number_format($currentBasePurchasePrice, 0) . ') lebih rendah dari harga beli terakhir per satuan dasar (' . number_format($this->lastKnownPurchasePrice, 0) . '). Lanjutkan?');
-            return; // Hentikan eksekusi sampai ada konfirmasi dari frontend
         }
 
         $this->confirmedAddItem();
@@ -314,6 +360,7 @@ class PurchaseCreate extends Component
             'conversion_factor' => $selectedUnit['conversion_factor'], // Store conversion factor
             'batch_number' => $this->batch_number,
             'purchase_price' => $this->purchase_price, // Price per selected unit
+            'selling_price' => $this->selling_price, // Selling price per selected unit
             'stock' => $stockInBaseUnits, // Stock in base units
             'original_stock_input' => $this->stock, // Store original input for display
             'expiration_date' => $this->expiration_date,
@@ -326,24 +373,42 @@ class PurchaseCreate extends Component
 
     public function updatePriceAndAddItem()
     {
-        // Calculate the minimum selling price in base unit
-        $minSellingPrice = $this->itemToAddCache['purchase_price'] / $this->itemToAddCache['conversion_factor'];
+        // Calculate the minimum selling price (should be at least equal to purchase price)
+        $minSellingPrice = $this->itemToAddCache['purchase_price'];
 
         $this->validate([
             'newSellingPrice' => 'required|numeric|min:' . $minSellingPrice
         ]);
 
-        $product = Product::find($this->itemToAddCache['product_id']);
-        if ($product && $product->baseUnit) {
-            $product->baseUnit->selling_price = $this->newSellingPrice;
-            $product->baseUnit->save();
+        // Update the selling price in the cached item
+        $this->itemToAddCache['selling_price'] = $this->newSellingPrice;
+
+        // Update the product unit's selling price
+        $productUnit = ProductUnit::find($this->itemToAddCache['product_unit_id']);
+        if ($productUnit) {
+            $productUnit->selling_price = $this->newSellingPrice;
+            $productUnit->save();
         }
 
-        $this->purchase_items[] = $this->itemToAddCache;
+        // Check if this is updating an existing item or adding a new one
+        if (isset($this->itemToAddCache['index'])) {
+            // Update existing item in the list
+            $index = $this->itemToAddCache['index'];
+            $this->purchase_items[$index]['selling_price'] = $this->newSellingPrice;
+            unset($this->itemToAddCache['index']); // Remove the index key
+        } else {
+            // Add new item to the list
+            $this->purchase_items[] = $this->itemToAddCache;
+        }
+        
         $this->calculateTotalPurchasePrice();
 
         $this->closePriceWarningModal();
-        $this->resetItemForm();
+        
+        // Only reset form if adding new item (not updating existing)
+        if (!isset($this->itemToAddCache['index'])) {
+            $this->resetItemForm();
+        }
     }
 
     public function closePriceWarningModal()
@@ -447,6 +512,7 @@ class PurchaseCreate extends Component
                 'conversion_factor' => $detail->productUnit->conversion_factor,
                 'batch_number' => '', // User must fill this
                 'purchase_price' => $detail->estimated_price ?? 0,
+                'selling_price' => $detail->productUnit->selling_price ?? 0,
                 'stock' => $stockInBaseUnits,
                 'original_stock_input' => $detail->quantity,
                 'expiration_date' => $defaultExpiration, // Default value
@@ -472,6 +538,7 @@ class PurchaseCreate extends Component
         $this->product_id = '';
         $this->batch_number = '';
         $this->purchase_price = '';
+        $this->selling_price = '';
         $this->stock = '';
         $this->expiration_date = '';
         $this->searchProduct = '';
@@ -480,7 +547,7 @@ class PurchaseCreate extends Component
         $this->selectedProductUnits = []; // Reset new properties
         $this->selectedProductUnitId = null; // Reset new properties
         $this->selectedProductUnitPurchasePrice = ''; // Reset new properties
-        $this->resetErrorBag(['product_id', 'selectedProductUnitId', 'batch_number', 'purchase_price', 'stock', 'expiration_date']);
+        $this->resetErrorBag(['product_id', 'selectedProductUnitId', 'batch_number', 'purchase_price', 'selling_price', 'stock', 'expiration_date']);
     }
 
     private function resetAll()

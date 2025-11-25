@@ -98,6 +98,11 @@
                     @error('purchase_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
+                    <label for="selling_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Jual per Satuan</label>
+                    <input type="number" step="0.01" id="selling_price" wire:model="selling_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    @error('selling_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                </div>
+                <div>
                     <label for="stock" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kuantitas (dalam Satuan Terpilih)</label>
                     <input type="number" id="stock" wire:model="stock" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('stock') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
@@ -131,7 +136,7 @@
                             </button>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                             <!-- Batch Number -->
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">No. Batch</label>
@@ -153,11 +158,18 @@
                                 @error("purchase_items.{$index}.original_stock_input") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
 
-                            <!-- Price -->
+                            <!-- Purchase Price -->
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Satuan</label>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Beli</label>
                                 <input type="number" wire:model.blur="purchase_items.{{ $index }}.purchase_price" min="0" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 @error("purchase_items.{$index}.purchase_price") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Selling Price -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Harga Jual</label>
+                                <input type="number" wire:model.blur="purchase_items.{{ $index }}.selling_price" min="0" class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                @error("purchase_items.{$index}.selling_price") <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                         </div>
 
@@ -194,16 +206,36 @@
     @if($showPriceWarningModal && $itemToAddCache)
     <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 class="text-xl font-bold text-yellow-600 dark:text-yellow-400">Peringatan Harga</h3>
+            @php
+                $priceChangeType = $itemToAddCache['price_change_type'] ?? 'increase';
+                $lastPrice = $itemToAddCache['last_purchase_price'] ?? 0;
+                $conversionFactor = $itemToAddCache['conversion_factor'] ?? 1;
+                $lastPriceInUnit = $lastPrice * $conversionFactor;
+            @endphp
+            
+            <h3 class="text-xl font-bold {{ $priceChangeType === 'increase' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400' }}">
+                {{ $priceChangeType === 'increase' ? 'Harga Beli Naik' : 'Harga Beli Turun' }}
+            </h3>
+            
             <div class="mt-4 text-gray-700 dark:text-gray-300">
-                <p>Harga beli untuk produk <strong>{{ $itemToAddCache['product_name'] }}</strong> (Rp {{ number_format($itemToAddCache['purchase_price'], 0) }} per {{ $itemToAddCache['unit_name'] }}) lebih tinggi dari harga jual satuan dasar saat ini (Rp {{ number_format(App\Models\Product::find($itemToAddCache['product_id'])->baseUnit->selling_price, 0) }} per {{ App\Models\Product::find($itemToAddCache['product_id'])->baseUnit->name }}).</p>
-                <p class="mt-2">Anda akan menjual produk ini dengan rugi. Silakan perbarui harga jual.</p>
+                <p>Harga beli untuk produk <strong>{{ $itemToAddCache['product_name'] }}</strong>:</p>
+                <div class="mt-2 bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                    <p class="text-sm">Harga beli terakhir: <strong>Rp {{ number_format($lastPriceInUnit, 0) }}</strong> per {{ $itemToAddCache['unit_name'] }}</p>
+                    <p class="text-sm mt-1">Harga beli baru: <strong class="{{ $priceChangeType === 'increase' ? 'text-red-600' : 'text-green-600' }}">Rp {{ number_format($itemToAddCache['purchase_price'], 0) }}</strong> per {{ $itemToAddCache['unit_name'] }}</p>
+                </div>
+                
+                @if($priceChangeType === 'increase')
+                    <p class="mt-3 text-sm">Harga beli naik. Anda mungkin perlu menaikkan harga jual untuk mempertahankan margin keuntungan.</p>
+                @else
+                    <p class="mt-3 text-sm">Harga beli turun. Anda bisa menurunkan harga jual untuk lebih kompetitif, atau mempertahankan harga jual untuk margin lebih tinggi.</p>
+                @endif
             </div>
 
             <div class="mt-6">
-                <label for="newSellingPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Jual Baru</label>
+                <label for="newSellingPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Jual per {{ $itemToAddCache['unit_name'] }}</label>
                 <input type="number" id="newSellingPrice" wire:model="newSellingPrice" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600">
                 @error('newSellingPrice') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimal: Rp {{ number_format($itemToAddCache['purchase_price'], 0) }}</p>
             </div>
 
             <div class="mt-6 flex justify-end space-x-4">
@@ -211,7 +243,7 @@
                     Batal
                 </button>
                 <button type="button" wire:click="updatePriceAndAddItem" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-                    Update Harga & Tambah Item
+                    Update Harga & Lanjutkan
                 </button>
             </div>
         </div>
@@ -227,6 +259,11 @@
                 Livewire.dispatch('confirmedAddItem');
             }
         });
+
+        Livewire.on('selling-price-warning', (message) => {
+            alert(message);
+        });
     </script>
     @endscript
+</div>
 </div>

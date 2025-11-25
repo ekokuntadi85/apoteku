@@ -60,8 +60,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 items-end bg-gray-50 p-4 rounded dark:bg-gray-600">
             <div class="md:col-span-4 relative">
-                <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="product_search">
-                    Produk
+                <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300 flex items-center justify-between" for="product_search">
+                    <span>Produk</span>
+                    @if($selectedProductName)
+                        <span class="text-xs text-green-600 dark:text-green-400 font-normal">Terpilih: {{ $selectedProductName }}</span>
+                    @endif
                 </label>
                 <input wire:model.live="searchProduct" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-500 dark:text-gray-200 dark:border-gray-400" id="product_search" type="text" placeholder="Cari Produk...">
                 
@@ -73,9 +76,6 @@
                             </li>
                         @endforeach
                     </ul>
-                @endif
-                @if($selectedProductName)
-                    <div class="mt-1 text-sm text-green-600 dark:text-green-400 font-bold">Terpilih: {{ $selectedProductName }}</div>
                 @endif
                 @error('product_id') <span class="text-red-500 text-xs italic">{{ $message }}</span> @enderror
             </div>

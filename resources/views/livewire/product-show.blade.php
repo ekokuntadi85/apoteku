@@ -67,43 +67,102 @@
 
             <div>
                 <h3 class="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600 border-b pb-2">Sejarah Stok</h3>
+                
+                <!-- Active Batches -->
                 <div class="mt-4 space-y-4">
-                    @forelse($product->productBatches as $batch)
-                        <div class="bg-white/80 dark:bg-gray-700/70 p-4 rounded-xl shadow-sm border border-gray-200/70 dark:border-gray-600/60 @if($batch->purchase) cursor-pointer hover:bg-indigo-50/60 dark:hover:bg-zinc-800/70 transition-colors @endif" @if($batch->purchase) tabindex="0" onclick="window.location='{{ route('purchases.show', $batch->purchase->id) }}'" @endif>
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $batch->purchase->supplier->name ?? 'Stok Awal' }}</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $batch->purchase->purchase_date ?? $batch->created_at->format('Y-m-d') }}</p>
-                                    @if ($batch->expiration_date)
-                                        @php
-                                            $expires = \Carbon\Carbon::parse($batch->expiration_date);
-                                            $isExpired = $expires->isPast();
-                                            $isExpiringSoon = !$isExpired && $expires->isBefore(now()->addDays(90));
-                                            
-                                            $badgeClass = 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300';
-                                            $badgeText = '';
-                                            if ($isExpired) { $badgeClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'; $badgeText = 'Expired'; }
-                                            elseif ($isExpiringSoon) { $badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; $badgeText = 'Expires Soon'; }
-                                        @endphp
-                                        <div class="mt-1 flex items-center gap-2">
-                                            <span class="text-sm text-gray-600 dark:text-gray-300">ED: {{ $expires->format('d/m/Y') }}</span>
-                                            @if($badgeText)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold {{ $badgeClass }}">{{ $badgeText }}</span>
-                                            @endif
+                    @if($product->activeBatches->count() > 0)
+                        <div class="mb-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                                <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                Batch Aktif ({{ $product->activeBatches->count() }})
+                            </h4>
+                            <div class="space-y-3">
+                                @foreach($product->activeBatches as $batch)
+                                    <div class="bg-white/80 dark:bg-gray-700/70 p-4 rounded-xl shadow-sm border border-gray-200/70 dark:border-gray-600/60 @if($batch->purchase) cursor-pointer hover:bg-indigo-50/60 dark:hover:bg-zinc-800/70 transition-colors @endif" @if($batch->purchase) tabindex="0" onclick="window.location='{{ route('purchases.show', $batch->purchase->id) }}'" @endif>
+                                        <div class="flex justify-between items-center">
+                                            <div class="flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $batch->purchase->supplier->name ?? 'Stok Awal' }}</p>
+                                                    @if($batch->batch_number && $batch->batch_number !== '-')
+                                                        <span class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded">Batch: {{ $batch->batch_number }}</span>
+                                                    @endif
+                                                </div>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $batch->purchase->purchase_date ?? $batch->created_at->format('Y-m-d') }}</p>
+                                                @if ($batch->expiration_date)
+                                                    @php
+                                                        $expires = \Carbon\Carbon::parse($batch->expiration_date);
+                                                        $isExpired = $expires->isPast();
+                                                        $isExpiringSoon = !$isExpired && $expires->isBefore(now()->addDays(90));
+                                                        
+                                                        $badgeClass = 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300';
+                                                        $badgeText = '';
+                                                        if ($isExpired) { $badgeClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'; $badgeText = 'Expired'; }
+                                                        elseif ($isExpiringSoon) { $badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; $badgeText = 'Expires Soon'; }
+                                                    @endphp
+                                                    <div class="mt-1 flex items-center gap-2">
+                                                        <span class="text-sm text-gray-600 dark:text-gray-300">ED: {{ $expires->format('d/m/Y') }}</span>
+                                                        @if($badgeText)
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold {{ $badgeClass }}">{{ $badgeText }}</span>
+                                                        @endif
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-bold text-lg text-gray-800 dark:text-gray-100">{{ $batch->stock }} <span class="text-sm font-normal">{{ $product->baseUnit->name }}</span></p>
+                                                <p class="text-sm text-gray-600 dark:text-gray-300">@ Rp {{ number_format($batch->purchase_price, 0) }}</p>
+                                            </div>
                                         </div>
-                                    @endif
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-lg text-gray-800 dark:text-gray-100">{{ $batch->stock }} <span class="text-sm font-normal">{{ $product->baseUnit->name }}</span></p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-300">@ Rp {{ number_format($batch->purchase_price, 0) }}</p>
-                                    
-                                </div>
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
-                    @empty
-                        <p class="text-gray-500 dark:text-gray-400">Tidak ada sejarah stok.</p>
-                    @endforelse
+                    @else
+                        <div class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Tidak ada batch dengan stok aktif</p>
+                        </div>
+                    @endif
                 </div>
+
+                <!-- Depleted Batches (Collapsible) -->
+                @if($product->depletedBatches->count() > 0)
+                    <div class="mt-6" x-data="{ showDepleted: false }">
+                        <button @click="showDepleted = !showDepleted" class="w-full flex items-center justify-between text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors py-2 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span class="flex items-center">
+                                <span class="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                                Batch Habis ({{ $product->depletedBatches->count() }})
+                            </span>
+                            <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-180': showDepleted }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        
+                        <div x-show="showDepleted" x-collapse class="mt-3 space-y-3">
+                            @foreach($product->depletedBatches as $batch)
+                                <div class="bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-xl border border-gray-200/50 dark:border-gray-700/50 opacity-60">
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2">
+                                                <p class="font-medium text-gray-700 dark:text-gray-300">{{ $batch->purchase->supplier->name ?? 'Stok Awal' }}</p>
+                                                @if($batch->batch_number && $batch->batch_number !== '-')
+                                                    <span class="text-xs bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-2 py-0.5 rounded">Batch: {{ $batch->batch_number }}</span>
+                                                @endif
+                                                <span class="text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-2 py-0.5 rounded font-semibold">Habis</span>
+                                            </div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $batch->purchase->purchase_date ?? $batch->created_at->format('Y-m-d') }}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 line-through">{{ $batch->stock }} {{ $product->baseUnit->name }}</p>
+                                            <p class="text-xs text-gray-400 dark:text-gray-500">@ Rp {{ number_format($batch->purchase_price, 0) }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

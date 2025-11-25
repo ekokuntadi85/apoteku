@@ -35,6 +35,27 @@ class PurchaseOrderCreate extends Component
     public $selectedProductUnitId;
     
     public $order_items = [];
+    
+    // Hardcoded OOT active substances
+    public $ootActiveSubstances = [
+        'Tramadol',
+        'Triheksifenidil',
+        'Klorpromazin',
+        'Amitriptilin',
+        'Haloperidol',
+        'Dekstrometorfan',
+        'Ketamin',
+    ];
+    
+    // Hardcoded Prekursor active substances
+    public $prekursorActiveSubstances = [
+        'Ephedrine',
+        'Pseudoephedrine',
+        'Norephedrine',
+        'Ergometrine',
+        'Ergotamine',
+        'Potassium Permanganate',
+    ];
 
     protected $rules = [
         'supplier_id' => 'required|exists:suppliers,id',

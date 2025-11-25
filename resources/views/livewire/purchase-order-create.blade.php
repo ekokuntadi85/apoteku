@@ -150,9 +150,23 @@
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $item['product_name'] }}</td>
                         @if(in_array($type, ['oot', 'prekursor']))
                             <td class="px-6 py-4 text-gray-900 dark:text-gray-200">
-                                <input type="text" wire:model.blur="order_items.{{ $index }}.active_substance" 
-                                       class="w-full text-sm rounded border-gray-300 dark:bg-gray-600 dark:border-gray-500 dark:text-white" 
-                                       placeholder="Zat Aktif">
+                                @if($type === 'oot')
+                                    <select wire:model.blur="order_items.{{ $index }}.active_substance" 
+                                            class="w-full text-sm rounded border-gray-300 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        <option value="">Pilih Zat Aktif</option>
+                                        @foreach($ootActiveSubstances as $substance)
+                                            <option value="{{ $substance }}">{{ $substance }}</option>
+                                        @endforeach
+                                    </select>
+                                @elseif($type === 'prekursor')
+                                    <select wire:model.blur="order_items.{{ $index }}.active_substance" 
+                                            class="w-full text-sm rounded border-gray-300 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                                        <option value="">Pilih Zat Aktif</option>
+                                        @foreach($prekursorActiveSubstances as $substance)
+                                            <option value="{{ $substance }}">{{ $substance }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-gray-900 dark:text-gray-200">
                                 <select wire:model.blur="order_items.{{ $index }}.dosage_form" 
