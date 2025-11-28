@@ -94,3 +94,14 @@ Metode instalasi yang direkomendasikan adalah menggunakan Docker untuk memastika
 
 8.  **Selesai!**
     Aplikasi sekarang dapat diakses melalui browser di alamat `http://localhost`.
+
+## Dokumentasi
+
+Untuk dokumentasi lengkap mengenai deployment, fitur, dan pengembangan aplikasi, silakan lihat folder **[docs/](./docs/)**.
+
+Dokumentasi yang tersedia:
+- **[Deployment Guide](./docs/DEPLOYMENT.md)** - Panduan deployment lengkap
+- **[Project Summary](./docs/PROJECT_SUMMARY.md)** - Ringkasan proyek dan fitur
+- **[Custom Artisan Commands](./docs/CUSTOM_ARTISAN_COMMANDS.md)** - Dokumentasi command artisan custom
+- **[Improvement Strategy](./docs/IMPROVEMENT_STRATEGY.md)** - Strategi pengembangan
+- **[Rencana Fitur Tutup Tahun](./docs/rencana_fitur_tutup_tahun.md)** - Rencana fitur mendatang
