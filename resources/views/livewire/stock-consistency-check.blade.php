@@ -26,7 +26,7 @@
         @if ($checkPerformed)
             @if (!empty($inconsistentProducts))
                 <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg dark:border-gray-700 mb-4">
-                     <div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700 dark:bg-red-800 dark:border-red-600 dark:text-red-200 flex justify-between items-center">
+                     <div class="p-4 bg-red-100 dark:bg-red-900 border-l-4 border-red-500 dark:border-red-400 text-red-700 dark:text-red-200 dark:bg-red-800 dark:border-red-600 dark:text-red-200 flex justify-between items-center">
                         <div>
                             <h3 class="font-bold">Ditemukan {{ count($inconsistentProducts) }} Ketidaksesuaian</h3>
                             <p>Stok di batch produk tidak cocok dengan catatan di kartu stok.</p>
@@ -72,7 +72,7 @@
                     </div>
                 </div>
             @else
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 dark:bg-green-800 dark:border-green-600 dark:text-green-200" role="alert">
+                <div class="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 dark:border-green-400 text-green-700 dark:text-green-200 p-4 mb-4 dark:bg-green-800 dark:border-green-600 dark:text-green-200" role="alert">
                     <p class="font-bold">Pemeriksaan Selesai</p>
                     <p>Tidak ditemukan adanya ketidaksesuaian stok. Semua data sudah konsisten.</p>
                 </div>

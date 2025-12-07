@@ -38,7 +38,7 @@
                  x-transition:leave-start="opacity-100 transform translate-y-0"
                  x-transition:leave-end="opacity-0 transform -translate-y-2"
                  x-init="setTimeout(() => show = false, 5000)"
-                 class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md flex justify-between items-center" 
+                 class="mb-4 bg-red-100 dark:bg-red-900 border-l-4 border-red-500 dark:border-red-400 text-red-700 dark:text-red-200 p-4 rounded shadow-md flex justify-between items-center" 
                  role="alert">
                 <div>
                     <p class="font-bold">Error!</p>
