@@ -8,6 +8,7 @@ export default defineConfig({
     './vendor/livewire/flux/stubs/**/*.blade.php',
     "./app/Livewire/**/*.php" // Untuk Laravel 10 / Livewire 3
   ],
+  darkMode: 'class', // Enable class-based dark mode for Flux
   theme: {
     extend: {
       fontFamily: {
