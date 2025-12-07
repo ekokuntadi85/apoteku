@@ -37,7 +37,7 @@
     @if (session()->has('message'))
         <div x-data="{ show: true }" x-show="show" x-transition
              x-init="setTimeout(() => show = false, 3000)"
-             class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded dark:bg-green-900/30 dark:text-green-300"
+             class="mb-6 bg-green-100 dark:bg-green-900 border-l-4 border-green-500 dark:border-green-400 text-green-700 dark:text-green-200 p-4 rounded dark:bg-green-900/30 dark:text-green-300"
              role="alert">
             <p class="font-bold">Success!</p>
             <p>{{ session('message') }}</p>

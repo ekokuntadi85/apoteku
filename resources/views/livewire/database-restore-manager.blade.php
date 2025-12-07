@@ -7,14 +7,14 @@
 
     <div class="p-4 sm:p-6">
         @if (session()->has('message'))
-            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+            <div class="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 dark:border-green-400 text-green-700 dark:text-green-200 p-4 mb-6" role="alert">
                 <p class="font-bold">Berhasil</p>
                 <p>{{ session('message') }}</p>
             </div>
         @endif
 
         @if (session()->has('error'))
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <div class="bg-red-100 dark:bg-red-900 border-l-4 border-red-500 dark:border-red-400 text-red-700 dark:text-red-200 p-4 mb-6" role="alert">
                 <p class="font-bold">Terjadi Kesalahan</p>
                 <p>{{ session('error') }}</p>
             </div>
