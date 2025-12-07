@@ -18,7 +18,6 @@ class PurchaseOrderCreate extends Component
     public $po_number;
     public $order_date;
     public $status = 'draft';
-    public $notes;
     public $type = 'general';
     
     // For product search
@@ -30,6 +29,7 @@ class PurchaseOrderCreate extends Component
     public $product_id;
     public $quantity;
     public $estimated_price;
+    public $item_notes;
     
     public $selectedProductUnits = [];
     public $selectedProductUnitId;
@@ -165,6 +165,7 @@ class PurchaseOrderCreate extends Component
             'quantity' => $this->quantity,
             'estimated_price' => $this->estimated_price,
             'subtotal' => ($this->estimated_price ?? 0) * $this->quantity,
+            'notes' => $this->item_notes,
         ];
 
         $this->resetItemForm();
@@ -196,13 +197,26 @@ class PurchaseOrderCreate extends Component
     {
         $this->validate();
 
+        // Custom validation for OOT/Prekursor
+        if (in_array($this->type, ['oot', 'prekursor'])) {
+            foreach ($this->order_items as $index => $item) {
+                if (empty($item['active_substance'])) {
+                    $this->addError("order_items.{$index}.active_substance", 'Zat aktif wajib dipilih untuk pesanan OOT/Prekursor.');
+                    
+                    // Also add a general error message for better visibility
+                    session()->flash('error', 'Gagal menyimpan: Zat aktif wajib dipilih untuk semua item pada pesanan OOT/Prekursor.');
+                    return;
+                }
+            }
+        }
+
         DB::transaction(function () {
             $purchaseOrder = PurchaseOrder::create([
                 'po_number' => $this->po_number,
                 'supplier_id' => $this->supplier_id,
                 'order_date' => $this->order_date,
                 'status' => 'draft',
-                'notes' => $this->notes,
+                'status' => 'draft',
                 'type' => $this->type,
             ]);
 
@@ -215,6 +229,7 @@ class PurchaseOrderCreate extends Component
                     'product_unit_id' => $item['product_unit_id'],
                     'quantity' => $item['quantity'],
                     'estimated_price' => $item['estimated_price'],
+                    'notes' => $item['notes'] ?? null,
                 ]);
             }
         });
@@ -228,6 +243,7 @@ class PurchaseOrderCreate extends Component
         $this->product_id = '';
         $this->quantity = '';
         $this->estimated_price = '';
+        $this->item_notes = '';
         $this->searchProduct = '';
         $this->searchResults = [];
         $this->selectedProductName = '';

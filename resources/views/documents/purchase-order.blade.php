@@ -130,7 +130,7 @@
                 <td>{{ $detail->product->name }}</td>
                 <td>{{ $detail->productUnit->name }}</td>
                 <td style="text-align: center;">{{ $detail->quantity }}</td>
-                <td>{{ $purchaseOrder->notes ?? '-' }}</td>
+                <td>{{ $detail->notes ?? '-' }}</td>
             </tr>
             @endforeach
         </tbody>

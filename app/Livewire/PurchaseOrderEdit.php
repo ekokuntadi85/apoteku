@@ -20,7 +20,8 @@ class PurchaseOrderEdit extends Component
     public $po_number;
     public $order_date;
     public $status;
-    public $notes;
+    public $type;
+    public $item_notes;
     
     // For product search
     public $searchProduct = '';
@@ -35,6 +36,29 @@ class PurchaseOrderEdit extends Component
     public $selectedProductUnitId;
     
     public $order_items = [];
+    
+    public $allUnits = [];
+    
+    // Hardcoded OOT active substances
+    public $ootActiveSubstances = [
+        'Tramadol',
+        'Triheksifenidil',
+        'Klorpromazin',
+        'Amitriptilin',
+        'Haloperidol',
+        'Dekstrometorfan',
+        'Ketamin',
+    ];
+    
+    // Hardcoded Prekursor active substances
+    public $prekursorActiveSubstances = [
+        'Ephedrine',
+        'Pseudoephedrine',
+        'Norephedrine',
+        'Ergometrine',
+        'Ergotamine',
+        'Potassium Permanganate',
+    ];
 
     protected $rules = [
         'supplier_id' => 'required|exists:suppliers,id',
@@ -58,7 +82,9 @@ class PurchaseOrderEdit extends Component
         $this->po_number = $purchaseOrder->po_number;
         $this->order_date = $purchaseOrder->order_date->format('Y-m-d');
         $this->status = $purchaseOrder->status;
-        $this->notes = $purchaseOrder->notes;
+        $this->type = $purchaseOrder->type;
+        
+        $this->allUnits = \App\Models\ProductUnit::select('name')->distinct()->pluck('name')->toArray();
 
         foreach ($purchaseOrder->details as $detail) {
             $this->order_items[] = [
@@ -69,6 +95,9 @@ class PurchaseOrderEdit extends Component
                 'quantity' => $detail->quantity,
                 'estimated_price' => $detail->estimated_price,
                 'subtotal' => ($detail->estimated_price ?? 0) * $detail->quantity,
+                'notes' => $detail->notes,
+                'active_substance' => $detail->active_substance,
+                'dosage_form' => $detail->dosage_form,
             ];
         }
     }
@@ -138,6 +167,9 @@ class PurchaseOrderEdit extends Component
             'quantity' => $this->quantity,
             'estimated_price' => $this->estimated_price,
             'subtotal' => ($this->estimated_price ?? 0) * $this->quantity,
+            'notes' => $this->item_notes,
+            'active_substance' => $product->active_substance ?? '',
+            'dosage_form' => $selectedUnit['name'],
         ];
 
         $this->resetItemForm();
@@ -153,11 +185,21 @@ class PurchaseOrderEdit extends Component
     {
         $this->validate();
 
+        // Custom validation for OOT/Prekursor
+        if (in_array($this->type, ['oot', 'prekursor'])) {
+            foreach ($this->order_items as $index => $item) {
+                if (empty($item['active_substance'])) {
+                    $this->addError("order_items.{$index}.active_substance", 'Zat aktif wajib dipilih untuk pesanan OOT/Prekursor.');
+                    session()->flash('error', 'Gagal menyimpan: Zat aktif wajib dipilih untuk semua item pada pesanan OOT/Prekursor.');
+                    return;
+                }
+            }
+        }
+
         DB::transaction(function () {
             $this->purchaseOrder->update([
                 'supplier_id' => $this->supplier_id,
                 'order_date' => $this->order_date,
-                'notes' => $this->notes,
             ]);
 
             // Delete existing details and recreate
@@ -170,6 +212,9 @@ class PurchaseOrderEdit extends Component
                     'product_unit_id' => $item['product_unit_id'],
                     'quantity' => $item['quantity'],
                     'estimated_price' => $item['estimated_price'],
+                    'notes' => $item['notes'] ?? null,
+                    'active_substance' => $item['active_substance'] ?? null,
+                    'dosage_form' => $item['dosage_form'] ?? null,
                 ]);
             }
         });
@@ -183,6 +228,7 @@ class PurchaseOrderEdit extends Component
         $this->product_id = '';
         $this->quantity = '';
         $this->estimated_price = '';
+        $this->item_notes = '';
         $this->searchProduct = '';
         $this->searchResults = [];
         $this->selectedProductName = '';

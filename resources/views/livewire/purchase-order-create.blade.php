@@ -59,12 +59,7 @@
             </div>
         </div>
         
-        <div class="mb-4">
-             <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="notes">
-                Catatan
-            </label>
-            <textarea wire:model="notes" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500" id="notes" rows="3"></textarea>
-        </div>
+
 
         <hr class="my-6 border-gray-300 dark:border-gray-600">
 
@@ -121,6 +116,13 @@
                 @error('estimated_price') <span class="text-red-500 text-xs italic">{{ $message }}</span> @enderror
             </div>
 
+            <div class="md:col-span-12">
+                <label class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300" for="item_notes">
+                    Keterangan (Opsional)
+                </label>
+                <input wire:model="item_notes" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-500 dark:text-gray-200 dark:border-gray-400" id="item_notes" type="text" placeholder="Contoh: ED Panjang, Bonus, dll">
+            </div>
+
             <div class="md:col-span-1">
                 <button wire:click="addItem" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full dark:bg-green-600 dark:hover:bg-green-700">
                     +
@@ -141,6 +143,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Jumlah</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Est. Harga</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Subtotal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Keterangan</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Aksi</th>
                     </tr>
                 </thead>
@@ -158,6 +161,7 @@
                                             <option value="{{ $substance }}">{{ $substance }}</option>
                                         @endforeach
                                     </select>
+                                    @error("order_items.{$index}.active_substance") <span class="text-red-500 text-xs italic block">{{ $message }}</span> @enderror
                                 @elseif($type === 'prekursor')
                                     <select wire:model.blur="order_items.{{ $index }}.active_substance" 
                                             class="w-full text-sm rounded border-gray-300 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
@@ -166,6 +170,7 @@
                                             <option value="{{ $substance }}">{{ $substance }}</option>
                                         @endforeach
                                     </select>
+                                    @error("order_items.{$index}.active_substance") <span class="text-red-500 text-xs italic block">{{ $message }}</span> @enderror
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-gray-900 dark:text-gray-200">
@@ -187,20 +192,24 @@
                                    class="w-24 text-sm rounded border-gray-300 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">Rp {{ number_format($item['subtotal'], 2) }}</td>
+                        <td class="px-6 py-4 text-gray-900 dark:text-gray-200">
+                            <input type="text" wire:model.blur="order_items.{{ $index }}.notes"
+                                   class="w-full text-sm rounded border-gray-300 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <button wire:click="removeItem({{ $index }})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Hapus</button>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ in_array($type, ['oot', 'prekursor']) ? '8' : '6' }}" class="text-center py-4 text-gray-500 dark:text-gray-400">Belum ada item.</td>
+                        <td colspan="{{ in_array($type, ['oot', 'prekursor']) ? '9' : '7' }}" class="text-center py-4 text-gray-500 dark:text-gray-400">Belum ada item.</td>
                     </tr>
                     @endforelse
                 </tbody>
                 @if(count($order_items) > 0)
                 <tfoot class="bg-gray-50 dark:bg-gray-600">
                     <tr>
-                        <td colspan="{{ in_array($type, ['oot', 'prekursor']) ? '6' : '4' }}" class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">Total Estimasi:</td>
+                        <td colspan="{{ in_array($type, ['oot', 'prekursor']) ? '7' : '5' }}" class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">Total Estimasi:</td>
                         <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">
                             Rp {{ number_format(collect($order_items)->sum('subtotal'), 2) }}
                         </td>

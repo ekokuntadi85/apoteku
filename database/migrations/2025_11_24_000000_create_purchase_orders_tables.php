@@ -14,7 +14,6 @@ return new class extends Migration
             $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
             $table->date('order_date');
             $table->enum('status', ['draft', 'sent', 'completed', 'cancelled'])->default('draft');
-            $table->text('notes')->nullable();
             $table->timestamps();
         });
 
@@ -25,6 +24,7 @@ return new class extends Migration
             $table->foreignId('product_unit_id')->constrained('product_units');
             $table->integer('quantity');
             $table->decimal('estimated_price', 15, 2)->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

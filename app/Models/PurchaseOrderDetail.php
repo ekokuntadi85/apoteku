@@ -17,6 +17,7 @@ class PurchaseOrderDetail extends Model
         'product_unit_id',
         'quantity',
         'estimated_price',
+        'notes',
     ];
 
     public function purchaseOrder()
