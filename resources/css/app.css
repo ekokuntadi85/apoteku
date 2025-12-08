@@ -90,6 +90,7 @@ select:focus[data-flux-control] {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -98,4 +99,42 @@ select:focus[data-flux-control] {
 
 .animate-fade-in {
     animation: fade-in 0.3s ease-out;
+}
+
+/* Short screen media query for height-based responsive design */
+@media (max-height: 800px) {
+    .short-screen\:py-3 {
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .short-screen\:mb-2 {
+        margin-bottom: 0.5rem;
+    }
+
+    .short-screen\:mb-1 {
+        margin-bottom: 0.25rem;
+    }
+
+    .short-screen\:p-2 {
+        padding: 0.5rem;
+    }
+
+    .short-screen\:w-12 {
+        width: 3rem;
+    }
+
+    .short-screen\:h-12 {
+        height: 3rem;
+    }
+
+    .short-screen\:text-xl {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+    }
+
+    .short-screen\:text-xs {
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
 }

@@ -11,8 +11,8 @@
     <div class="w-full h-full absolute inset-0 z-10">
         <div class="h-full flex flex-col bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm overflow-y-auto">
             
-            <!-- Header Section with Vibrant Gradient - Responsive with smaller sizes on mobile -->
-            <div class="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 px-4 py-4 md:px-8 md:py-16 text-center relative overflow-hidden">
+            <!-- Header Section with Vibrant Gradient - Responsive based on both width AND height -->
+            <div class="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 px-4 py-4 md:py-8 lg:py-16 text-center relative overflow-hidden short-screen:py-3">
                 <!-- Decorative pattern overlay -->
                 <div class="absolute inset-0 opacity-10">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
@@ -20,25 +20,25 @@
                 </div>
                 
                 @if(config('settings.app_logo_path'))
-                    <div class="flex justify-center mb-2 md:mb-6 relative z-10">
-                        <div class="bg-white rounded-xl md:rounded-2xl p-2 md:p-5 shadow-2xl ring-2 md:ring-4 ring-white/30">
+                    <div class="flex justify-center mb-2 md:mb-4 lg:mb-6 relative z-10 short-screen:mb-2">
+                        <div class="bg-white rounded-xl md:rounded-2xl p-2 md:p-3 lg:p-5 shadow-2xl ring-2 md:ring-4 ring-white/30 short-screen:p-2">
                             <img src="{{ asset('storage/' . config('settings.app_logo_path')) }}" 
                                  alt="{{ config('settings.app_name', 'App Logo') }}" 
-                                 class="w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 object-contain">
+                                 class="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain short-screen:w-12 short-screen:h-12">
                         </div>
                     </div>
                 @endif
                 
-                <!-- Text - Smaller on mobile, larger on desktop -->
-                <h1 class="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-1 md:mb-3 relative z-10 drop-shadow-lg">
+                <!-- Text - Responsive based on width and height -->
+                <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1 md:mb-2 lg:mb-3 relative z-10 drop-shadow-lg short-screen:text-xl short-screen:mb-1">
                     {{ config('settings.app_name', 'Muazara') }}
                 </h1>
-                <p class="text-xs sm:text-sm md:text-base text-emerald-50 relative z-10">
+                <p class="text-xs sm:text-sm md:text-base text-emerald-50 relative z-10 short-screen:text-xs">
                     {{ __('Professional Pharmacy Management System') }}
                 </p>
             </div>
 
-            <!-- Form Section - Centered in Remaining Space with adjusted padding -->
+            <!-- Form Section - Centered in Remaining Space with height-aware padding -->
             <div class="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 relative z-50">
                 <div class="w-full max-w-md space-y-4 sm:space-y-6">
                     

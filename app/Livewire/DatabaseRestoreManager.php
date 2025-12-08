@@ -61,30 +61,38 @@ class DatabaseRestoreManager extends Component
                 $this->restoreLog .= "Memeriksa dan mengupdate struktur database...\n";
                 
                 try {
-                    // Get list of migrations that should exist based on backup
-                    $existingMigrations = [
-                        '2025_08_11_120000_create_transaction_detail_batches_table',
-                        '2025_08_17_195259_create_kartu_monitoring_suhus_table',
-                        '2025_11_14_111630_create_settings_table',
-                    ];
+                    // AUTOMATIC: Get all migrations that create tables
+                    $this->restoreLog .= "Mendeteksi migration yang sudah ada...\n";
                     
-                    // Mark existing migrations as ran if tables exist
-                    foreach ($existingMigrations as $migration) {
-                        $tableName = $this->getTableNameFromMigration($migration);
+                    $migrationPath = database_path('migrations');
+                    $migrationFiles = glob($migrationPath . '/*_create_*_table.php');
+                    
+                    $markedCount = 0;
+                    foreach ($migrationFiles as $file) {
+                        $migrationName = basename($file, '.php');
+                        $tableName = $this->getTableNameFromMigration($migrationName);
+                        
                         if ($tableName && \Schema::hasTable($tableName)) {
                             // Check if migration record exists
                             $exists = \DB::table('migrations')
-                                ->where('migration', $migration)
+                                ->where('migration', $migrationName)
                                 ->exists();
                             
                             if (!$exists) {
                                 \DB::table('migrations')->insert([
-                                    'migration' => $migration,
+                                    'migration' => $migrationName,
                                     'batch' => 1
                                 ]);
-                                $this->restoreLog .= "✓ Marked '{$migration}' as ran (table exists)\n";
+                                $this->restoreLog .= "  ✓ {$tableName}\n";
+                                $markedCount++;
                             }
                         }
+                    }
+                    
+                    if ($markedCount > 0) {
+                        $this->restoreLog .= "\n{$markedCount} migration ditandai sebagai sudah dijalankan.\n";
+                    } else {
+                        $this->restoreLog .= "Semua migration sudah tercatat.\n";
                     }
                     
                     // Now run remaining migrations (new ones)
