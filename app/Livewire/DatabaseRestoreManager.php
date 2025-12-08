@@ -56,21 +56,56 @@ class DatabaseRestoreManager extends Component
             if ($process->successful()) {
                 $this->restoreLog .= "\nPROSES RESTORE BERHASIL!\n";
                 
-                // IMPORTANT: Run migrations to update schema
+                // IMPORTANT: Smart migration - mark existing migrations as ran, then run new ones
                 $this->restoreLog .= "\n=== MENJALANKAN MIGRATION ===\n";
-                $this->restoreLog .= "Mengupdate struktur database...\n";
+                $this->restoreLog .= "Memeriksa dan mengupdate struktur database...\n";
                 
                 try {
+                    // Get list of migrations that should exist based on backup
+                    $existingMigrations = [
+                        '2025_08_11_120000_create_transaction_detail_batches_table',
+                        '2025_08_17_195259_create_kartu_monitoring_suhus_table',
+                        '2025_11_14_111630_create_settings_table',
+                    ];
+                    
+                    // Mark existing migrations as ran if tables exist
+                    foreach ($existingMigrations as $migration) {
+                        $tableName = $this->getTableNameFromMigration($migration);
+                        if ($tableName && \Schema::hasTable($tableName)) {
+                            // Check if migration record exists
+                            $exists = \DB::table('migrations')
+                                ->where('migration', $migration)
+                                ->exists();
+                            
+                            if (!$exists) {
+                                \DB::table('migrations')->insert([
+                                    'migration' => $migration,
+                                    'batch' => 1
+                                ]);
+                                $this->restoreLog .= "✓ Marked '{$migration}' as ran (table exists)\n";
+                            }
+                        }
+                    }
+                    
+                    // Now run remaining migrations (new ones)
+                    $this->restoreLog .= "\nMenjalankan migration baru...\n";
                     \Artisan::call('migrate', ['--force' => true]);
                     $migrationOutput = \Artisan::output();
-                    $this->restoreLog .= $migrationOutput;
-                    $this->restoreLog .= "\nMIGRATION SELESAI!\n";
+                    
+                    // Only show output if there were actual migrations
+                    if (trim($migrationOutput) && !str_contains($migrationOutput, 'Nothing to migrate')) {
+                        $this->restoreLog .= $migrationOutput;
+                    } else {
+                        $this->restoreLog .= "✓ Tidak ada migration baru yang perlu dijalankan.\n";
+                    }
+                    
+                    $this->restoreLog .= "\n✅ MIGRATION SELESAI!\n";
                     
                     session()->flash('message', 'Database berhasil di-restore dan schema telah diupdate.');
                 } catch (\Exception $e) {
                     $this->restoreLog .= "\nWARNING: Migration gagal - " . $e->getMessage() . "\n";
-                    $this->restoreLog .= "Anda mungkin perlu menjalankan 'php artisan migrate' secara manual.\n";
-                    session()->flash('message', 'Database berhasil di-restore, tapi migration gagal. Jalankan migration manual.');
+                    $this->restoreLog .= "Database sudah di-restore, tapi ada masalah dengan migration.\n";
+                    session()->flash('message', 'Database berhasil di-restore. Cek log untuk detail migration.');
                 }
             } else {
                 $this->restoreLog .= "\nPROSES RESTORE GAGAL!\n";
@@ -90,6 +125,24 @@ class DatabaseRestoreManager extends Component
             // Reset file input
             $this->reset('sqlFile');
         }
+    }
+    
+    /**
+     * Extract table name from migration filename
+     * e.g., "2025_08_11_120000_create_transaction_detail_batches_table" -> "transaction_detail_batches"
+     */
+    private function getTableNameFromMigration($migration)
+    {
+        // Pattern: create_TABLENAME_table or add_COLUMN_to_TABLENAME_table
+        if (preg_match('/create_(.+)_table$/', $migration, $matches)) {
+            return $matches[1];
+        }
+        
+        if (preg_match('/to_(.+)_table$/', $migration, $matches)) {
+            return $matches[1];
+        }
+        
+        return null;
     }
 
     public function render()
