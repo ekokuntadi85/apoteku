@@ -55,7 +55,23 @@ class DatabaseRestoreManager extends Component
 
             if ($process->successful()) {
                 $this->restoreLog .= "\nPROSES RESTORE BERHASIL!\n";
-                session()->flash('message', 'Database berhasil di-restore.');
+                
+                // IMPORTANT: Run migrations to update schema
+                $this->restoreLog .= "\n=== MENJALANKAN MIGRATION ===\n";
+                $this->restoreLog .= "Mengupdate struktur database...\n";
+                
+                try {
+                    \Artisan::call('migrate', ['--force' => true]);
+                    $migrationOutput = \Artisan::output();
+                    $this->restoreLog .= $migrationOutput;
+                    $this->restoreLog .= "\nMIGRATION SELESAI!\n";
+                    
+                    session()->flash('message', 'Database berhasil di-restore dan schema telah diupdate.');
+                } catch (\Exception $e) {
+                    $this->restoreLog .= "\nWARNING: Migration gagal - " . $e->getMessage() . "\n";
+                    $this->restoreLog .= "Anda mungkin perlu menjalankan 'php artisan migrate' secara manual.\n";
+                    session()->flash('message', 'Database berhasil di-restore, tapi migration gagal. Jalankan migration manual.');
+                }
             } else {
                 $this->restoreLog .= "\nPROSES RESTORE GAGAL!\n";
                 $this->restoreLog .= "Error Output: " . $process->errorOutput();
