@@ -83,3 +83,19 @@ select:focus[data-flux-control] {
     text-align: right;
     flex-grow: 1;
 }
+
+/* Fade-in animation for file upload success */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+}
