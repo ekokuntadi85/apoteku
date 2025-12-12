@@ -118,6 +118,11 @@ class PurchaseCreate extends Component
         $index = $parts[0];
         $field = $parts[1];
 
+        // Ensure the item exists at the specified index
+        if (!isset($this->purchase_items[$index])) {
+            return;
+        }
+
         if (in_array($field, ['original_stock_input', 'purchase_price'])) {
             // Ensure numeric values
             $qty = (int)($this->purchase_items[$index]['original_stock_input'] ?? 0);
@@ -138,29 +143,32 @@ class PurchaseCreate extends Component
         // Check if purchase price changed and is DIFFERENT from last known price
         if ($field === 'purchase_price') {
             $product = Product::find($this->purchase_items[$index]['product_id']);
-            $latestBatch = ProductBatch::where('product_id', $product->id)
-                                        ->latest('created_at')
-                                        ->first();
             
-            if ($latestBatch) {
-                $conversionFactor = $this->purchase_items[$index]['conversion_factor'] ?? 1;
-                $lastKnownPurchasePrice = $latestBatch->purchase_price;
-                $currentPurchasePriceInBaseUnit = $this->purchase_items[$index]['purchase_price'] / $conversionFactor;
+            if ($product) {
+                $latestBatch = ProductBatch::where('product_id', $product->id)
+                                            ->latest('created_at')
+                                            ->first();
                 
-                if ($currentPurchasePriceInBaseUnit != $lastKnownPurchasePrice) {
-                    // Show warning that purchase price changed
-                    $this->itemToAddCache = $this->purchase_items[$index];
-                    $this->itemToAddCache['index'] = $index;
-                    $this->itemToAddCache['last_purchase_price'] = $lastKnownPurchasePrice;
-                    $this->itemToAddCache['price_change_type'] = $currentPurchasePriceInBaseUnit > $lastKnownPurchasePrice ? 'increase' : 'decrease';
+                if ($latestBatch) {
+                    $conversionFactor = $this->purchase_items[$index]['conversion_factor'] ?? 1;
+                    $lastKnownPurchasePrice = $latestBatch->purchase_price;
+                    $currentPurchasePriceInBaseUnit = $this->purchase_items[$index]['purchase_price'] / $conversionFactor;
                     
-                    // Suggest new selling price (at least equal to or higher than purchase price)
-                    $minSellingPrice = $this->purchase_items[$index]['selling_price'];
-                    if ($this->purchase_items[$index]['selling_price'] < $this->purchase_items[$index]['purchase_price']) {
-                        $minSellingPrice = $this->purchase_items[$index]['purchase_price'];
+                    if ($currentPurchasePriceInBaseUnit != $lastKnownPurchasePrice) {
+                        // Show warning that purchase price changed
+                        $this->itemToAddCache = $this->purchase_items[$index];
+                        $this->itemToAddCache['index'] = $index;
+                        $this->itemToAddCache['last_purchase_price'] = $lastKnownPurchasePrice;
+                        $this->itemToAddCache['price_change_type'] = $currentPurchasePriceInBaseUnit > $lastKnownPurchasePrice ? 'increase' : 'decrease';
+                        
+                        // Suggest new selling price (at least equal to or higher than purchase price)
+                        $minSellingPrice = $this->purchase_items[$index]['selling_price'];
+                        if ($this->purchase_items[$index]['selling_price'] < $this->purchase_items[$index]['purchase_price']) {
+                            $minSellingPrice = $this->purchase_items[$index]['purchase_price'];
+                        }
+                        $this->newSellingPrice = $minSellingPrice;
+                        $this->showPriceWarningModal = true;
                     }
-                    $this->newSellingPrice = $minSellingPrice;
-                    $this->showPriceWarningModal = true;
                 }
             }
         }
@@ -284,7 +292,15 @@ class PurchaseCreate extends Component
 
     public function addItem()
     {
+        $this->validate($this->itemRules);
+
         $product = Product::find($this->product_id);
+        
+        if (!$product) {
+            session()->flash('error', 'Produk tidak valid.');
+            return;
+        }
+
         $selectedUnit = collect($this->selectedProductUnits)->firstWhere('id', $this->selectedProductUnitId);
 
         if (!$selectedUnit) {
@@ -292,11 +308,13 @@ class PurchaseCreate extends Component
             return;
         }
 
+        $conversionFactor = $selectedUnit['conversion_factor'] > 0 ? $selectedUnit['conversion_factor'] : 1;
+
         // Calculate stock in base units
-        $stockInBaseUnits = $this->stock * $selectedUnit['conversion_factor'];
+        $stockInBaseUnits = $this->stock * $conversionFactor;
 
         // Calculate the purchase price in base units for comparison
-        $purchasePriceInBaseUnit = $this->purchase_price / $selectedUnit['conversion_factor'];
+        $purchasePriceInBaseUnit = $this->purchase_price / $conversionFactor;
 
         // Check if purchase price is DIFFERENT from last known purchase price
         if ($this->lastKnownPurchasePrice !== null && $purchasePriceInBaseUnit != $this->lastKnownPurchasePrice) {
@@ -308,7 +326,7 @@ class PurchaseCreate extends Component
                 'product_name' => $product->name,
                 'product_unit_id' => $this->selectedProductUnitId,
                 'unit_name' => $selectedUnit['name'],
-                'conversion_factor' => $selectedUnit['conversion_factor'],
+                'conversion_factor' => $conversionFactor,
                 'batch_number' => $this->batch_number,
                 'purchase_price' => $this->purchase_price,
                 'selling_price' => $this->selling_price,
@@ -337,6 +355,12 @@ class PurchaseCreate extends Component
     public function confirmedAddItem()
     {
         $product = Product::find($this->product_id);
+        
+        if (!$product) {
+            session()->flash('error', 'Produk tidak valid.');
+            return;
+        }
+
         $selectedUnit = collect($this->selectedProductUnits)->firstWhere('id', $this->selectedProductUnitId);
 
         if (!$selectedUnit) {
@@ -349,15 +373,17 @@ class PurchaseCreate extends Component
             $this->expiration_date = \Carbon\Carbon::now()->addYear()->format('Y-m-d');
         }
 
+        $conversionFactor = $selectedUnit['conversion_factor'] > 0 ? $selectedUnit['conversion_factor'] : 1;
+
         // Calculate stock in base units
-        $stockInBaseUnits = $this->stock * $selectedUnit['conversion_factor'];
+        $stockInBaseUnits = $this->stock * $conversionFactor;
 
         $this->purchase_items[] = [
             'product_id' => $this->product_id,
             'product_name' => $product->name,
             'product_unit_id' => $this->selectedProductUnitId, // Store selected unit ID
             'unit_name' => $selectedUnit['name'], // Store selected unit name for display
-            'conversion_factor' => $selectedUnit['conversion_factor'], // Store conversion factor
+            'conversion_factor' => $conversionFactor, // Store conversion factor
             'batch_number' => $this->batch_number,
             'purchase_price' => $this->purchase_price, // Price per selected unit
             'selling_price' => $this->selling_price, // Selling price per selected unit
