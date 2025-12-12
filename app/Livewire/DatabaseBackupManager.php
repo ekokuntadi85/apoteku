@@ -28,8 +28,8 @@ class DatabaseBackupManager extends Component
 
     public function mount()
     {
-        $this->dropboxEnabled = env('DROPBOX_ENABLED', false);
-        $this->dropboxAccessToken = env('DROPBOX_ACCESS_TOKEN', '');
+        $this->dropboxEnabled = config('filesystems.disks.dropbox.driver') === 'dropbox';
+        $this->dropboxAccessToken = config('filesystems.disks.dropbox.authorization_token');
         $this->getBackups();
     }
 
@@ -123,15 +123,16 @@ class DatabaseBackupManager extends Component
 
     protected function exportDatabase($filePath)
     {
-        $database = env('DB_DATABASE');
-        $username = env('DB_USERNAME');
-        $password = env('DB_PASSWORD');
-        $host = env('DB_HOST', 'db');
+        $dbConfig = config('database.connections.mysql');
+        $database = $dbConfig['database'];
+        $username = $dbConfig['username'];
+        $password = $dbConfig['password'];
+        $host = $dbConfig['host'];
 
         // Use MYSQL_PWD environment variable for secure password handling
         // --skip-ssl to avoid SSL connection issues with MariaDB
         $command = sprintf(
-            'MYSQL_PWD=%s mysqldump --skip-ssl -h%s -u%s %s > %s 2>&1',
+            'MYSQL_PWD=%s mariadb-dump --skip-ssl -h%s -u%s %s > %s 2>&1',
             escapeshellarg($password),
             escapeshellarg($host),
             escapeshellarg($username),
