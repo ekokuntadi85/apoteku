@@ -24,6 +24,12 @@
                         Proses ke Pembelian
                     </a>
                 @endif
+
+                @if($purchaseOrder->status === 'completed' && $purchaseOrder->purchase)
+                    <a href="{{ route('purchases.show', $purchaseOrder->purchase->id) }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline dark:bg-blue-600 dark:hover:bg-blue-700 text-center">
+                        Lihat Pembelian
+                    </a>
+                @endif
                 
                 <!-- Output Actions -->
                 <a href="{{ route('purchase-orders.print', $purchaseOrder->id) }}" target="_blank" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline dark:bg-indigo-600 dark:hover:bg-indigo-700 text-center">
@@ -101,9 +107,10 @@
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Produk</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Satuan</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Jumlah</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Est. Harga</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Subtotal</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Jml Pesan</th>
+                        @if($purchaseOrder->status === 'completed' && $purchaseOrder->purchase)
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Jml Diterima</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-700 dark:divide-gray-600">
@@ -112,19 +119,22 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">{{ $detail->product->name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $detail->productUnit->name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $detail->quantity }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp {{ number_format($detail->estimated_price, 2) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp {{ number_format($detail->estimated_price * $detail->quantity, 2) }}</td>
+                        @if($purchaseOrder->status === 'completed' && $purchaseOrder->purchase)
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                @if(isset($actualQuantities[$detail->id]))
+                                    @php 
+                                        $qty = $actualQuantities[$detail->id];
+                                        // Display decimals only if necessary
+                                        echo fmod($qty, 1) !== 0.00 ? number_format($qty, 2, ',', '.') : number_format($qty, 0, ',', '.');
+                                    @endphp
+                                @else
+                                    -
+                                @endif
+                            </td>
+                        @endif
                     </tr>
                     @endforeach
                 </tbody>
-                <tfoot class="bg-gray-50 dark:bg-gray-600">
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">Total Estimasi:</td>
-                        <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                            Rp {{ number_format($purchaseOrder->details->sum(function($detail) { return $detail->estimated_price * $detail->quantity; }), 2) }}
-                        </td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

@@ -30,4 +30,9 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(PurchaseOrderDetail::class);
     }
+
+    public function purchase()
+    {
+        return $this->hasOne(Purchase::class);
+    }
 }

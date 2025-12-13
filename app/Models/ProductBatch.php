@@ -33,4 +33,9 @@ class ProductBatch extends Model
     {
         return $this->belongsTo(ProductUnit::class);
     }
+
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
 }

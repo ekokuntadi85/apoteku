@@ -61,18 +61,53 @@ class DatabaseRestoreManager extends Component
                 $this->restoreLog .= "Memeriksa dan mengupdate struktur database...\n";
                 
                 try {
-                    // AUTOMATIC: Get all migrations that create tables
+                    // AUTOMATIC: Smart Migration Detection
                     $this->restoreLog .= "Mendeteksi migration yang sudah ada...\n";
                     
                     $migrationPath = database_path('migrations');
-                    $migrationFiles = glob($migrationPath . '/*_create_*_table.php');
+                    $migrationFiles = glob($migrationPath . '/*.php');
                     
                     $markedCount = 0;
                     foreach ($migrationFiles as $file) {
                         $migrationName = basename($file, '.php');
                         $tableName = $this->getTableNameFromMigration($migrationName);
                         
+                        $shouldMark = false;
+
                         if ($tableName && \Schema::hasTable($tableName)) {
+                            // Case 1: Create Table Migration
+                            if (str_contains($migrationName, '_create_')) {
+                                $shouldMark = true;
+                            }
+                            // Case 2: Add Column Migration - Check if columns exist by inspecting file
+                            elseif (str_contains($migrationName, '_add_') || str_contains($migrationName, '_to_')) {
+                                $columns = $this->getColumnsFromMigrationFile($file);
+                                if (!empty($columns)) {
+                                    // Robustness Check: If ANY of the columns defined in the file already exist in the table,
+                                    // we assume this migration (or at least this part of it) has already run.
+                                    // We cannot safely run it again without crashing on "Duplicate column".
+                                    $anyColumnExists = false;
+                                    foreach ($columns as $column) {
+                                        if (\Schema::hasColumn($tableName, $column)) {
+                                            $anyColumnExists = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if ($anyColumnExists) {
+                                        $shouldMark = true;
+                                    }
+                                } else {
+                                    // Fallback: If no columns detected (e.g. complex migration), check if we can infer from filename
+                                    $columnName = $this->getColumnNameFromMigration($migrationName);
+                                    if ($columnName && \Schema::hasColumn($tableName, $columnName)) {
+                                        $shouldMark = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if ($shouldMark) {
                             // Check if migration record exists
                             $exists = \DB::table('migrations')
                                 ->where('migration', $migrationName)
@@ -83,8 +118,23 @@ class DatabaseRestoreManager extends Component
                                     'migration' => $migrationName,
                                     'batch' => 1
                                 ]);
-                                $this->restoreLog .= "  ✓ {$tableName}\n";
+                                $this->restoreLog .= "  ✓ {$migrationName} (detected)\n";
                                 $markedCount++;
+                            } else {
+                                $this->restoreLog .= "  • {$migrationName} (already recorded)\n";
+                            }
+                        } else {
+                            // Debug logging for failed detection
+                            $reason = "Unknown";
+                            if (!$tableName) $reason = "TableName not found";
+                            elseif (!\Schema::hasTable($tableName)) $reason = "Table {$tableName} missing";
+                            elseif (isset($columns) && empty($columns)) $reason = "No columns found in file";
+                            elseif (isset($allColumnsExist) && !$allColumnsExist) $reason = "Column check failed";
+                            
+                            $this->restoreLog .= "  - {$migrationName} skipped ({$reason})\n";
+                            if (isset($columns) && !empty($columns)) {
+                                $this->restoreLog .= "    Detected columns: " . implode(', ', $columns) . "\n";
+                                $this->restoreLog .= "    Target table: {$tableName}\n";
                             }
                         }
                     }
@@ -92,19 +142,25 @@ class DatabaseRestoreManager extends Component
                     if ($markedCount > 0) {
                         $this->restoreLog .= "\n{$markedCount} migration ditandai sebagai sudah dijalankan.\n";
                     } else {
-                        $this->restoreLog .= "Semua migration sudah tercatat.\n";
+                        $this->restoreLog .= "Semua migration yang relevan sudah tercatat.\n";
                     }
                     
                     // Now run remaining migrations (new ones)
                     $this->restoreLog .= "\nMenjalankan migration baru...\n";
-                    \Artisan::call('migrate', ['--force' => true]);
-                    $migrationOutput = \Artisan::output();
-                    
-                    // Only show output if there were actual migrations
-                    if (trim($migrationOutput) && !str_contains($migrationOutput, 'Nothing to migrate')) {
-                        $this->restoreLog .= $migrationOutput;
-                    } else {
-                        $this->restoreLog .= "✓ Tidak ada migration baru yang perlu dijalankan.\n";
+                    try {
+                        \Artisan::call('migrate', ['--force' => true]);
+                        $migrationOutput = \Artisan::output();
+                        
+                        // Only show output if there were actual migrations
+                        if (trim($migrationOutput) && !str_contains($migrationOutput, 'Nothing to migrate')) {
+                            $this->restoreLog .= $migrationOutput;
+                        } else {
+                            $this->restoreLog .= "✓ Tidak ada migration baru yang perlu dijalankan.\n";
+                        }
+                    } catch (\Exception $e) {
+                         // Catch here to show partial output
+                         $this->restoreLog .= "\nERROR executing migrate: " . $e->getMessage() . "\n";
+                         throw $e;
                     }
                     
                     $this->restoreLog .= "\n✅ MIGRATION SELESAI!\n";
@@ -141,16 +197,62 @@ class DatabaseRestoreManager extends Component
      */
     private function getTableNameFromMigration($migration)
     {
-        // Pattern: create_TABLENAME_table or add_COLUMN_to_TABLENAME_table
-        if (preg_match('/create_(.+)_table$/', $migration, $matches)) {
+        // Pattern: create_TABLENAME_table or create_TABLENAME_tables
+        if (preg_match('/create_(.+)_tables?$/', $migration, $matches)) {
             return $matches[1];
         }
         
-        if (preg_match('/to_(.+)_table$/', $migration, $matches)) {
+        // Pattern: add_..._to_TABLENAME_and_... (Complex limit)
+        if (preg_match('/to_(.+?)_and_/', $migration, $matches)) {
+             return $matches[1];
+        }
+
+        // Pattern: add_..._to_TABLENAME_table (optional _table suffix)
+        // We use non-greedy matching for the table name to handle the optional suffix correctly if present
+        if (preg_match('/to_(.+?)(?:_table)?$/', $migration, $matches)) {
             return $matches[1];
         }
         
         return null;
+    }
+
+    private function getColumnNameFromMigration($migration)
+    {
+        // Pattern: add_COLUMN_to_TABLENAME_table
+        if (preg_match('/add_(.+?)_to_/', $migration, $matches)) {
+            // If there are multiple columns (e.g. col1_and_col2), just taking the first part usually works for a "hasColumn" check 
+            // if we assume checking one is enough evidence.
+            $parts = explode('_and_', $matches[1]);
+            return $parts[0];
+        }
+        return null;
+    }
+
+    private function getColumnsFromMigrationFile($filePath)
+    {
+        $content = file_get_contents($filePath);
+        $columns = [];
+
+        // Match $table->method('column_name')
+        // We capture the method name (Group 1) and the column name (Group 2)
+        if (preg_match_all('/\$table->([a-zA-Z]+)\([\'"](.+?)[\'"]/', $content, $matches, PREG_SET_ORDER)) {
+            $ignoredMethods = [
+                'index', 'unique', 'foreign', 'primary', 'spatialIndex',
+                'dropColumn', 'dropSoftDeletes', 'dropMorphs', 'dropRememberToken',
+                'renameColumn', 'after', 'comment', 'change'
+            ];
+
+            foreach ($matches as $match) {
+                $method = $match[1];
+                $column = $match[2];
+
+                if (!in_array($method, $ignoredMethods)) {
+                    $columns[] = $column;
+                }
+            }
+        }
+
+        return $columns;
     }
 
     public function render()

@@ -16,6 +16,7 @@ class Purchase extends Model
         'due_date',
         'payment_status',
         'supplier_id',
+        'purchase_order_id',
     ];
 
     public function supplier()
@@ -26,5 +27,10 @@ class Purchase extends Model
     public function productBatches()
     {
         return $this->hasMany(ProductBatch::class);
+    }
+
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 }

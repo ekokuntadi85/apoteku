@@ -472,6 +472,7 @@ class PurchaseCreate extends Component
                 'total_price' => $this->total_purchase_price,
                 'supplier_id' => $this->supplier_id,
                 'payment_status' => $this->payment_status,
+                'purchase_order_id' => $this->selectedPoId,
             ]);
 
             foreach ($this->purchase_items as $item) {
