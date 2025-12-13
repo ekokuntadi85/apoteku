@@ -38,6 +38,9 @@ class PurchaseCreate extends Component
     public $lastKnownPurchasePrice; // Properti baru untuk menyimpan harga beli terakhir
     public $lastKnownSellingPrice; // Last known selling price
     public $currentStock = 0; // Properti baru untuk stok saat ini
+    
+    public $payment_type = null; // 'tunai' or 'tempo'
+    public $showPaymentTypeModal = true; // Show modal on load
 
 
     public $selectedProductUnits = []; // New property for available units for selected product
@@ -187,6 +190,7 @@ class PurchaseCreate extends Component
     public function mount()
     {
         $this->purchase_date = now()->format('Y-m-d');
+        // Due date defaults to 30 days, but will be overriden if Tunai is selected
         $this->due_date = now()->addDays(30)->format('Y-m-d');
 
         $po_id = request()->query('po_id');
@@ -195,10 +199,32 @@ class PurchaseCreate extends Component
         }
     }
 
+    public function selectPaymentType($type)
+    {
+        $this->payment_type = $type;
+        $this->showPaymentTypeModal = false;
+
+        if ($type === 'tunai') {
+            $this->due_date = $this->purchase_date;
+            $this->payment_status = 'paid';
+        } else {
+            // Tempo / Credit
+            // Default to 30 days if not set or if it was same as purchase date (likely from tunai toggle)
+            if ($this->due_date === $this->purchase_date) {
+                $this->due_date = \Illuminate\Support\Carbon::parse($this->purchase_date)->addDays(30)->format('Y-m-d');
+            }
+            $this->payment_status = 'unpaid';
+        }
+    }
+
     public function updatedPurchaseDate($value)
     {
         if ($value) {
-            $this->due_date = \Illuminate\Support\Carbon::parse($value)->addDays(30)->format('Y-m-d');
+            if ($this->payment_type === 'tunai') {
+                $this->due_date = $value;
+            } else {
+                $this->due_date = \Illuminate\Support\Carbon::parse($value)->addDays(30)->format('Y-m-d');
+            }
         } else {
             $this->due_date = null;
         }
@@ -462,6 +488,12 @@ class PurchaseCreate extends Component
             $this->due_date = now()->format('Y-m-d');
         }
 
+        // Force rules for Tunai
+        if ($this->payment_type === 'tunai') {
+             $this->payment_status = 'paid';
+             $this->due_date = $this->purchase_date;
+        }
+
         $this->validate();
 
         DB::transaction(function () {
@@ -583,6 +615,11 @@ class PurchaseCreate extends Component
         $this->invoice_number = '';
         $this->purchase_date = now()->format('Y-m-d');
         $this->due_date = now()->addDays(30)->format('Y-m-d');
+        
+        // Reset payment type logic
+        $this->payment_type = null;
+        $this->showPaymentTypeModal = true;
+
         $this->total_purchase_price = 0;
         $this->purchase_items = [];
         $this->payment_status = 'unpaid';
