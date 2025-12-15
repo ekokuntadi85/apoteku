@@ -287,18 +287,34 @@ class DatabaseRestoreManager extends Component
             if (\Schema::hasTable('journal_entries')) {
                  $entryCount = \DB::table('journal_entries')->count();
                  $transactionCount = \DB::table('transactions')->where('type', 'POS')->count();
+                 $purchaseCount = \DB::table('purchases')->count();
+                 $expenseCount = \Schema::hasTable('expenses') ? \DB::table('expenses')->count() : 0;
                  
                  $this->restoreLog .= "✅ Tabel Journal Entries valid ({$entryCount} entri).\n";
+                 $this->restoreLog .= "   Data: {$transactionCount} transaksi, {$purchaseCount} pembelian, {$expenseCount} pengeluaran.\n";
                  
-                 // Smart Check: If we have transactions but NO Journals, we might need to sync!
-                 // This often happens if restoring an old backup into a new system code.
-                 if ($transactionCount > 0 && $entryCount == 0) {
-                     $this->restoreLog .= "⚠️ Terdeteksi Transaksi tanpa Jurnal (Kemungkinan restore dari backup lama)...\n";
+                 // Smart Check: If we have data but NO or FEW Journals, we need to sync!
+                 $totalDataCount = $transactionCount + $purchaseCount + $expenseCount;
+                 
+                 if ($totalDataCount > 0 && $entryCount < ($totalDataCount * 0.5)) {
+                     $this->restoreLog .= "⚠️ Terdeteksi data tanpa jurnal lengkap (Backup lama)...\n";
                      $this->restoreLog .= "   Menjalankan sinkronisasi jurnal otomatis...\n";
                      
-                     \Artisan::call('finance:sync-historical-journals');
-                     
-                     $this->restoreLog .= "✅ Sinkronisasi Selesai!\n";
+                     try {
+                         // Run sync and capture output
+                         \Artisan::call('finance:sync-historical-journals');
+                         $output = \Artisan::output();
+                         
+                         $this->restoreLog .= $output;
+                         $this->restoreLog .= "✅ Sinkronisasi Selesai!\n";
+                         
+                         // Re-count to verify
+                         $newEntryCount = \DB::table('journal_entries')->count();
+                         $this->restoreLog .= "   Journal entries sekarang: {$newEntryCount}\n";
+                     } catch (\Exception $syncError) {
+                         $this->restoreLog .= "❌ Error saat sync: " . $syncError->getMessage() . "\n";
+                         $this->restoreLog .= "   Silakan jalankan manual: php artisan finance:sync-historical-journals\n";
+                     }
                  }
             }
 

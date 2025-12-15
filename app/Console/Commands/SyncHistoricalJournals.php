@@ -115,20 +115,55 @@ class SyncHistoricalJournals extends Command
                 );
             }
 
-            // 2. COGS Jouranls per Detail
+            // 2. Payment Journal (if paid and was initially credit)
+            // This handles cases where transaction was created as credit but later paid
+            if ($transaction->payment_status === 'paid') {
+                $payRef = 'PAY-INV-' . $transaction->invoice_number;
+                
+                // Check if this was a credit sale (has AR journal entry)
+                $hasAREntry = JournalEntry::where('reference_number', $ref)
+                    ->whereHas('journalDetails', function($q) {
+                        $q->where('account_id', function($subq) {
+                            $subq->select('id')->from('accounts')->where('code', '103')->limit(1);
+                        })->where('debit', '>', 0);
+                    })->exists();
+                
+                // Only create payment journal if it was a credit sale and payment journal doesn't exist
+                if ($hasAREntry && !JournalEntry::where('reference_number', $payRef)->exists()) {
+                    JournalService::createEntry(
+                        $transaction->created_at->format('Y-m-d'), // Use transaction date as fallback
+                        $payRef,
+                        'Pelunasan Piutang #' . $transaction->invoice_number . ' (Sync)',
+                        [
+                            ['account_code' => '101', 'amount' => $transaction->total_price] // Debit Cash
+                        ],
+                        [
+                            ['account_code' => '103', 'amount' => $transaction->total_price] // Credit AR
+                        ]
+                    );
+                }
+            }
+
+            // 3. COGS Journals per Detail
             foreach ($transaction->transactionDetails as $detail) {
-                // Calculate COGS
+                // Calculate COGS from batch data
                 $cogs = 0;
-                // If it was already loaded with recursive relationship, use it
-                // We loaded transactionDetails.transactionDetailBatches.productBatch
-                foreach ($detail->transactionDetailBatches as $batchPivot) {
-                    if ($batchPivot->productBatch) {
-                        $cogs += $batchPivot->quantity * $batchPivot->productBatch->purchase_price;
+                
+                if ($detail->transactionDetailBatches && $detail->transactionDetailBatches->count() > 0) {
+                    // Use actual batch data
+                    foreach ($detail->transactionDetailBatches as $batchPivot) {
+                        if ($batchPivot->productBatch) {
+                            $cogs += $batchPivot->quantity * $batchPivot->productBatch->purchase_price;
+                        }
+                    }
+                } else {
+                    // Fallback: Estimate COGS using product's current purchase price
+                    // This is for old data that doesn't have batch tracking
+                    if ($detail->product && $detail->product->purchase_price > 0) {
+                        $cogs = $detail->quantity * $detail->product->purchase_price;
+                        $this->warn("  ⚠️  Using fallback COGS for {$detail->product->name} (no batch data)");
                     }
                 }
-                
-                // Fallback: If no batch info (old data?), estimate using latest purchase price?
-                // For now, only record if COGS > 0 to avoid zero journals.
                 
                 if ($cogs > 0) {
                     $cogsRef = 'COGS-' . $transaction->invoice_number . '-' . $detail->id;
@@ -145,6 +180,8 @@ class SyncHistoricalJournals extends Command
                              ]
                          );
                     }
+                } else {
+                    $this->warn("  ⚠️  Skipping COGS for detail #{$detail->id} (COGS = 0)");
                 }
             }
 
