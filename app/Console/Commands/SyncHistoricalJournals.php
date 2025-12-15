@@ -122,7 +122,7 @@ class SyncHistoricalJournals extends Command
                 
                 // Check if this was a credit sale (has AR journal entry)
                 $hasAREntry = JournalEntry::where('reference_number', $ref)
-                    ->whereHas('journalDetails', function($q) {
+                    ->whereHas('details', function($q) {
                         $q->where('account_id', function($subq) {
                             $subq->select('id')->from('accounts')->where('code', '103')->limit(1);
                         })->where('debit', '>', 0);
