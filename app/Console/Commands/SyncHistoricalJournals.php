@@ -157,11 +157,15 @@ class SyncHistoricalJournals extends Command
                         }
                     }
                 } else {
-                    // Fallback: Estimate COGS using product's current purchase price
-                    // This is for old data that doesn't have batch tracking
-                    if ($detail->product && $detail->product->purchase_price > 0) {
-                        $cogs = $detail->quantity * $detail->product->purchase_price;
-                        $this->warn("  ⚠️  Using fallback COGS for {$detail->product->name} (no batch data)");
+                    // Fallback: Use latest batch for this product
+                    $latestBatch = \App\Models\ProductBatch::where('product_id', $detail->product_id)
+                        ->where('purchase_price', '>', 0)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                    
+                    if ($latestBatch) {
+                        $cogs = $detail->quantity * $latestBatch->purchase_price;
+                        $this->warn("  ⚠️  Using latest batch COGS for {$detail->product->name} (no detail batch data)");
                     }
                 }
                 

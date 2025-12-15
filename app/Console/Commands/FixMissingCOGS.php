@@ -19,70 +19,32 @@ class FixMissingCOGS extends Command
         $this->info('🔧 Fixing Missing COGS Journals...');
         $this->newLine();
 
-        // Step 1: Update purchase prices
-        $this->info('Step 1: Updating product purchase prices from batch data...');
+        // Find transaction details without COGS journals
+        $this->info('Step 1: Finding transaction details without COGS journals...');
         
-        $nullCount = Product::whereNull('purchase_price')
-            ->orWhere('purchase_price', 0)
-            ->count();
+        $allDetails = TransactionDetail::with(['transaction', 'product', 'transactionDetailBatches.productBatch'])
+            ->get();
         
-        $this->warn("Products without purchase_price: {$nullCount}");
-        
-        if ($nullCount > 0) {
-            DB::statement("
-                UPDATE products 
-                SET purchase_price = COALESCE(
-                    (SELECT AVG(purchase_price) 
-                     FROM product_batches 
-                     WHERE product_id = products.id 
-                     AND purchase_price > 0),
-                    purchase_price
-                )
-                WHERE (purchase_price IS NULL OR purchase_price = 0)
-                AND EXISTS (SELECT 1 FROM product_batches WHERE product_id = products.id)
-            ");
-            
-            $stillNull = Product::whereNull('purchase_price')
-                ->orWhere('purchase_price', 0)
-                ->count();
-            
-            $fixed = $nullCount - $stillNull;
-            $this->info("✅ Fixed {$fixed} products");
-            
-            if ($stillNull > 0) {
-                $this->warn("⚠️  {$stillNull} products still have no price (no batch data available)");
-            }
-        }
-        
-        $this->newLine();
-        
-        // Step 2: Find transaction details without COGS journals
-        $this->info('Step 2: Finding transaction details without COGS journals...');
-        
-        $detailsWithoutCOGS = TransactionDetail::with(['transaction', 'product', 'transactionDetailBatches.productBatch'])
-            ->whereDoesntHave('transaction.journalEntries', function($q) {
-                // This is a simplified check - we'll verify per detail below
-            })
-            ->get()
-            ->filter(function($detail) {
-                $cogsRef = 'COGS-' . $detail->transaction->invoice_number . '-' . $detail->id;
-                return !JournalEntry::where('reference_number', $cogsRef)->exists();
-            });
+        $detailsWithoutCOGS = $allDetails->filter(function($detail) {
+            $cogsRef = 'COGS-' . $detail->transaction->invoice_number . '-' . $detail->id;
+            return !JournalEntry::where('reference_number', $cogsRef)->exists();
+        });
         
         $this->info("Found {$detailsWithoutCOGS->count()} details without COGS journals");
         
         if ($detailsWithoutCOGS->count() > 0) {
             $this->newLine();
-            $this->info('Step 3: Creating missing COGS journals...');
+            $this->info('Step 2: Creating missing COGS journals...');
             
             $bar = $this->output->createProgressBar($detailsWithoutCOGS->count());
             $bar->start();
             
             $created = 0;
             $skipped = 0;
+            $noBatchData = 0;
             
             foreach ($detailsWithoutCOGS as $detail) {
-                // Calculate COGS
+                // Calculate COGS from batch data
                 $cogs = 0;
                 
                 if ($detail->transactionDetailBatches && $detail->transactionDetailBatches->count() > 0) {
@@ -92,28 +54,40 @@ class FixMissingCOGS extends Command
                         }
                     }
                 } else {
-                    // Fallback
-                    if ($detail->product && $detail->product->purchase_price > 0) {
-                        $cogs = $detail->quantity * $detail->product->purchase_price;
+                    // No batch data - try to get from latest batch of this product
+                    $latestBatch = \App\Models\ProductBatch::where('product_id', $detail->product_id)
+                        ->where('purchase_price', '>', 0)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                    
+                    if ($latestBatch) {
+                        $cogs = $detail->quantity * $latestBatch->purchase_price;
+                    } else {
+                        $noBatchData++;
                     }
                 }
                 
                 if ($cogs > 0) {
                     $cogsRef = 'COGS-' . $detail->transaction->invoice_number . '-' . $detail->id;
                     
-                    JournalService::createEntry(
-                        $detail->transaction->created_at->format('Y-m-d'),
-                        $cogsRef,
-                        'HPP ' . optional($detail->product)->name . ' (Fix)',
-                        [
-                            ['account_code' => '501', 'amount' => $cogs]
-                        ],
-                        [
-                            ['account_code' => '104', 'amount' => $cogs]
-                        ]
-                    );
-                    
-                    $created++;
+                    try {
+                        JournalService::createEntry(
+                            $detail->transaction->created_at->format('Y-m-d'),
+                            $cogsRef,
+                            'HPP ' . optional($detail->product)->name . ' (Fix)',
+                            [
+                                ['account_code' => '501', 'amount' => $cogs]
+                            ],
+                            [
+                                ['account_code' => '104', 'amount' => $cogs]
+                            ]
+                        );
+                        
+                        $created++;
+                    } catch (\Exception $e) {
+                        $this->error("Error creating journal for detail #{$detail->id}: " . $e->getMessage());
+                        $skipped++;
+                    }
                 } else {
                     $skipped++;
                 }
@@ -127,8 +101,14 @@ class FixMissingCOGS extends Command
             $this->info("✅ Created {$created} COGS journals");
             
             if ($skipped > 0) {
-                $this->warn("⚠️  Skipped {$skipped} details (COGS still = 0)");
+                $this->warn("⚠️  Skipped {$skipped} details (COGS = 0)");
             }
+            
+            if ($noBatchData > 0) {
+                $this->warn("⚠️  {$noBatchData} details have no batch data at all");
+            }
+        } else {
+            $this->info('✅ All transaction details already have COGS journals!');
         }
         
         $this->newLine();
