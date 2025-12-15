@@ -15,6 +15,26 @@ class TransactionDetailObserver
     public function created(TransactionDetail $detail): void
     {
         (new StockService())->decrementStock($detail);
+
+        // Record COGS (HPP) Journal
+        $cogs = 0;
+        foreach ($detail->transactionDetailBatches()->with('productBatch')->get() as $batchPivot) {
+            $cogs += $batchPivot->quantity * $batchPivot->productBatch->purchase_price;
+        }
+
+        if ($cogs > 0) {
+            \App\Services\JournalService::createEntry(
+                $detail->transaction->created_at->format('Y-m-d'),
+                'COGS-' . $detail->transaction->invoice_number . '-' . $detail->id,
+                'HPP ' . $detail->product->name . ' (' . $detail->quantity . ' ' . $detail->productUnit->name . ')',
+                [
+                    ['account_code' => '501', 'amount' => $cogs] // Debit HPP
+                ],
+                [
+                    ['account_code' => '104', 'amount' => $cogs] // Credit Inventory
+                ]
+            );
+        }
     }
 
     /**

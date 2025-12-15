@@ -164,6 +164,9 @@ class DatabaseRestoreManager extends Component
                     }
                     
                     $this->restoreLog .= "\n✅ MIGRATION SELESAI!\n";
+
+                    // Validate Finance Module Data
+                    $this->validateFinanceModule();
                     
                     session()->flash('message', 'Database berhasil di-restore dan schema telah diupdate.');
                 } catch (\Exception $e) {
@@ -253,6 +256,55 @@ class DatabaseRestoreManager extends Component
         }
 
         return $columns;
+    }
+
+    private function validateFinanceModule()
+    {
+        $this->restoreLog .= "\n=== VALIDASI MODUL KEUANGAN ===\n";
+        
+        try {
+            // Check Accounts
+            if (\Schema::hasTable('accounts')) {
+                $count = \DB::table('accounts')->count();
+                if ($count === 0) {
+                    $this->restoreLog .= "⚠️ Tabel Accounts kosong. Menjalankan Seeder...\n";
+                    $beeder = new \Database\Seeders\AccountSeeder();
+                    $beeder->run();
+                    $this->restoreLog .= "✅ Default Chart of Accounts berhasil dibuat.\n";
+                } else {
+                    $this->restoreLog .= "✅ Tabel Accounts valid ({$count} akun ditemukan).\n";
+                }
+            } else {
+                $this->restoreLog .= "❌ Tabel Accounts TIDAK DITEMUKAN! Migration mungkin gagal.\n";
+            }
+
+            // Check Expense Categories
+            if (\Schema::hasTable('expense_categories')) {
+                 $this->restoreLog .= "✅ Tabel Expense Categories valid.\n";
+            }
+            
+            // Check Journal Entries
+            if (\Schema::hasTable('journal_entries')) {
+                 $entryCount = \DB::table('journal_entries')->count();
+                 $transactionCount = \DB::table('transactions')->where('type', 'POS')->count();
+                 
+                 $this->restoreLog .= "✅ Tabel Journal Entries valid ({$entryCount} entri).\n";
+                 
+                 // Smart Check: If we have transactions but NO Journals, we might need to sync!
+                 // This often happens if restoring an old backup into a new system code.
+                 if ($transactionCount > 0 && $entryCount == 0) {
+                     $this->restoreLog .= "⚠️ Terdeteksi Transaksi tanpa Jurnal (Kemungkinan restore dari backup lama)...\n";
+                     $this->restoreLog .= "   Menjalankan sinkronisasi jurnal otomatis...\n";
+                     
+                     \Artisan::call('finance:sync-historical-journals');
+                     
+                     $this->restoreLog .= "✅ Sinkronisasi Selesai!\n";
+                 }
+            }
+
+        } catch (\Exception $e) {
+            $this->restoreLog .= "❌ Error saat validasi keuangan: " . $e->getMessage() . "\n";
+        }
     }
 
     public function render()

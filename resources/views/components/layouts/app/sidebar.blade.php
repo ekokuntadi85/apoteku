@@ -3,6 +3,56 @@
     <head>
         @include('partials.head')
         @fluxAppearance
+        <style>
+            @media print {
+                /* Hide ALL navigation elements */
+                aside, nav, header, 
+                .flux-sidebar, .flux-header,
+                [data-flux-sidebar], [data-flux-header] {
+                    display: none !important;
+                }
+                
+                /* Ultra-aggressive body reset */
+                body, html {
+                    width: 100vw !important;
+                    max-width: 100vw !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow-x: hidden !important;
+                }
+                
+                /* Reset main content area */
+                main, 
+                .flux-main, 
+                [data-flux-main],
+                [data-flux-container] {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100vw !important;
+                    max-width: 100vw !important;
+                    margin-left: 0 !important;
+                    padding-left: 0 !important;
+                }
+                
+                /* Force all containers to full width */
+                .container,
+                .mx-auto,
+                div[class*="container"] {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin-left: 0 !important;
+                    margin-right: 0 !important;
+                    padding-left: 0 !important;
+                    padding-right: 0 !important;
+                }
+                
+                /* Force background colors to print */
+                * {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+            }
+        </style>
     </head>
 	<body class="min-h-screen bg-white dark:bg-zinc-800">
 		<flux:sidebar sticky stashable class="relative border-e border-zinc-200 bg-gradient-to-b from-sky-100 via-indigo-100 to-purple-200 dark:border-zinc-700 dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
@@ -35,6 +85,16 @@
 					<flux:navlist.item icon="computer-desktop" :href="route('pos.index')" :current="request()->routeIs('pos.index')" class="rounded-lg hover:bg-emerald-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>POS</flux:navlist.item>
 					<flux:navlist.item icon="banknotes" :href="route('accounts-receivable.index')" :current="request()->routeIs('accounts-receivable.index')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Daftar Invoice Kredit</flux:navlist.item>
 					<flux:navlist.item icon="adjustments-horizontal" :href="route('stock-opname.index')" :current="request()->routeIs('stock-opname.index')" class="rounded-lg hover:bg-amber-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Stok Opname</flux:navlist.item>
+                </flux:navlist.group>
+
+				<flux:navlist.group :heading="__('Keuangan')" expandable :expanded="false" class="mt-2">
+					<flux:navlist.item icon="banknotes" :href="route('expenses.index')" :current="request()->routeIs('expenses.*')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Pengeluaran Operasional</flux:navlist.item>
+					<flux:navlist.item icon="tag" :href="route('expense-categories.index')" :current="request()->routeIs('expense-categories.index')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Kategori Pengeluaran</flux:navlist.item>
+                    <flux:navlist.item icon="book-open" :href="route('journal-entries.create')" :current="request()->routeIs('journal-entries.create')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Input Jurnal Umum</flux:navlist.item>
+					<flux:navlist.item icon="credit-card" :href="route('reports.finance.accounts-payable')" :current="request()->routeIs('reports.finance.accounts-payable')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Hutang Usaha</flux:navlist.item>
+                    <flux:navlist.item icon="presentation-chart-line" :href="route('reports.finance.income-statement')" :current="request()->routeIs('reports.finance.income-statement')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Laba Rugi</flux:navlist.item>
+                    <flux:navlist.item icon="scale" :href="route('reports.finance.balance-sheet')" :current="request()->routeIs('reports.finance.balance-sheet')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Neraca</flux:navlist.item>
+                    <flux:navlist.item icon="book-open" :href="route('reports.finance.general-ledger')" :current="request()->routeIs('reports.finance.general-ledger')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Buku Besar</flux:navlist.item>
                 </flux:navlist.group>
 
 				<flux:navlist.group :heading="__('Laporan')" expandable :expanded="false" class="mt-2">

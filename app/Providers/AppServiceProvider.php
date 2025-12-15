@@ -38,5 +38,9 @@ class AppServiceProvider extends ServiceProvider
         TransactionDetail::observe(TransactionDetailObserver::class);
         StockOpnameDetail::observe(StockOpnameDetailObserver::class);
         StockOpname::observe(StockOpnameObserver::class);
+        
+        \App\Models\Transaction::observe(\App\Observers\TransactionObserver::class);
+        \App\Models\Purchase::observe(\App\Observers\PurchaseObserver::class);
+        \App\Models\Expense::observe(\App\Observers\ExpenseObserver::class);
     }
 }
