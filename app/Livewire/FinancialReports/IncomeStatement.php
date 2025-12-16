@@ -41,59 +41,54 @@ class IncomeStatement extends Component
 
     public function render()
     {
-        // 1. Revenue (Pendapatan)
-        // Only paid transactions or all? Accrual basis usually counts all.
-        // Let's assume Accrual (all valid invoices)
-        $transactions = Transaction::with(['transactionDetails.transactionDetailBatches.productBatch'])
-            ->whereBetween('created_at', [$this->startDate . ' 00:00:00', $this->endDate . ' 23:59:59'])
-            ->where('payment_status', '!=', 'cancelled') // Exclude cancelled
-            ->get();
+        // Use Journal Entries as single source of truth
+        // This ensures consistency with other financial reports
+        
+        // 1. Revenue (Account 401 - Sales Revenue)
+        $revenueAccount = \App\Models\Account::where('code', '401')->first();
+        $revenue = 0;
+        
+        if ($revenueAccount) {
+            $revenue = \App\Models\JournalDetail::where('account_id', $revenueAccount->id)
+                ->whereHas('journalEntry', function($q) {
+                    $q->whereBetween('transaction_date', [$this->startDate, $this->endDate]);
+                })
+                ->sum('credit'); // Revenue is credit
+        }
 
-        $revenue = $transactions->sum('total_price');
-
-        // 2. Cost of Goods Sold (HPP)
+        // 2. Cost of Goods Sold (Account 501 - COGS)
+        $cogsAccount = \App\Models\Account::where('code', '501')->first();
         $cogs = 0;
-        foreach ($transactions as $transaction) {
-            foreach ($transaction->transactionDetails as $detail) {
-                // Try to get cost from batches
-                $batchCost = 0;
-                $batchQuantity = 0;
-                
-                foreach ($detail->transactionDetailBatches as $batchDetail) {
-                    $purchasePrice = $batchDetail->productBatch->purchase_price ?? 0;
-                    $batchCost += $batchDetail->quantity * $purchasePrice;
-                    $batchQuantity += $batchDetail->quantity;
-                }
-                
-                // If batches cover the full quantity, use batch cost
-                if ($batchQuantity >= $detail->quantity) {
-                    $cogs += $batchCost;
-                } else {
-                    // Fallback: Use latest batch purchase price for missing quantity
-                    $remainingQty = $detail->quantity - $batchQuantity;
-                    
-                    $latestBatch = $detail->product->productBatches()->latest('created_at')->first();
-                    $fallbackPrice = $latestBatch ? $latestBatch->purchase_price : 0;
-                    
-                    $cogs += $batchCost + ($remainingQty * $fallbackPrice);
-                }
-            }
+        
+        if ($cogsAccount) {
+            $cogs = \App\Models\JournalDetail::where('account_id', $cogsAccount->id)
+                ->whereHas('journalEntry', function($q) {
+                    $q->whereBetween('transaction_date', [$this->startDate, $this->endDate]);
+                })
+                ->sum('debit'); // COGS is debit (expense)
         }
 
         // 3. Gross Profit
         $grossProfit = $revenue - $cogs;
 
-        // 4. Expenses
-        $expenses = Expense::with('category')
-            ->whereBetween('expense_date', [$this->startDate, $this->endDate])
-            ->get();
+        // 4. Operating Expenses (Accounts 502-507)
+        $expenseAccounts = \App\Models\Account::whereBetween('code', ['502', '507'])->get();
         
-        $totalExpenses = $expenses->sum('amount');
+        $expensesByCategory = [];
+        $totalExpenses = 0;
         
-        $expensesByCategory = $expenses->groupBy('category.name')
-            ->map(function ($row) {
-                return $row->sum('amount');
-            });
+        foreach ($expenseAccounts as $account) {
+            $amount = \App\Models\JournalDetail::where('account_id', $account->id)
+                ->whereHas('journalEntry', function($q) {
+                    $q->whereBetween('transaction_date', [$this->startDate, $this->endDate]);
+                })
+                ->sum('debit'); // Expenses are debit
+            
+            if ($amount > 0) {
+                $expensesByCategory[$account->name] = $amount;
+                $totalExpenses += $amount;
+            }
+        }
 
         // 5. Net Profit
         $netProfit = $grossProfit - $totalExpenses;
