@@ -95,6 +95,7 @@
                     <flux:navlist.item icon="presentation-chart-line" :href="route('reports.finance.income-statement')" :current="request()->routeIs('reports.finance.income-statement')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Laba Rugi</flux:navlist.item>
                     <flux:navlist.item icon="scale" :href="route('reports.finance.balance-sheet')" :current="request()->routeIs('reports.finance.balance-sheet')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Laporan Neraca</flux:navlist.item>
                     <flux:navlist.item icon="book-open" :href="route('reports.finance.general-ledger')" :current="request()->routeIs('reports.finance.general-ledger')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Buku Besar</flux:navlist.item>
+                    <flux:navlist.item icon="arrow-path" :href="route('finance.journal-sync')" :current="request()->routeIs('finance.journal-sync')" class="rounded-lg hover:bg-rose-50/70 dark:hover:bg-zinc-800/70 transition-colors" wire:navigate>Sinkronisasi Jurnal</flux:navlist.item>
                 </flux:navlist.group>
 
 				<flux:navlist.group :heading="__('Laporan')" expandable :expanded="false" class="mt-2">

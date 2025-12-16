@@ -293,28 +293,32 @@ class DatabaseRestoreManager extends Component
                  $this->restoreLog .= "✅ Tabel Journal Entries valid ({$entryCount} entri).\n";
                  $this->restoreLog .= "   Data: {$transactionCount} transaksi, {$purchaseCount} pembelian, {$expenseCount} pengeluaran.\n";
                  
-                 // Smart Check: If we have data but NO or FEW Journals, we need to sync!
+                 // Smart Check: If we have data but NO or FEW Journals
                  $totalDataCount = $transactionCount + $purchaseCount + $expenseCount;
                  
                  if ($totalDataCount > 0 && $entryCount < ($totalDataCount * 0.5)) {
                      $this->restoreLog .= "⚠️ Terdeteksi data tanpa jurnal lengkap (Backup lama)...\n";
-                     $this->restoreLog .= "   Menjalankan sinkronisasi jurnal otomatis...\n";
+                     $this->restoreLog .= "   📌 PENTING: Silakan buka menu 'Sinkronisasi Jurnal' untuk sync data.\n";
+                     $this->restoreLog .= "   Menu: Keuangan > Sinkronisasi Jurnal\n";
+                     $this->restoreLog .= "   Atau jalankan manual: php artisan finance:sync-historical-journals\n\n";
                      
+                     // AUTO-SYNC DISABLED untuk mempercepat restore
+                     // User bisa sync manual via halaman Journal Sync Manager
+                     /*
                      try {
-                         // Run sync and capture output
                          \Artisan::call('finance:sync-historical-journals');
                          $output = \Artisan::output();
-                         
                          $this->restoreLog .= $output;
                          $this->restoreLog .= "✅ Sinkronisasi Selesai!\n";
-                         
-                         // Re-count to verify
                          $newEntryCount = \DB::table('journal_entries')->count();
                          $this->restoreLog .= "   Journal entries sekarang: {$newEntryCount}\n";
                      } catch (\Exception $syncError) {
                          $this->restoreLog .= "❌ Error saat sync: " . $syncError->getMessage() . "\n";
                          $this->restoreLog .= "   Silakan jalankan manual: php artisan finance:sync-historical-journals\n";
                      }
+                     */
+                 } else {
+                     $this->restoreLog .= "✅ Journal coverage baik ({$entryCount} dari ~" . ($totalDataCount * 2) . " expected).\n";
                  }
             }
 

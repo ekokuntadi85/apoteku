@@ -158,6 +158,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/finance/general-ledger', \App\Livewire\FinancialReports\GeneralLedger::class)->name('reports.finance.general-ledger');
         Route::get('/reports/finance/general-ledger/print', [\App\Http\Controllers\FinancialReportPrintController::class, 'generalLedger'])->name('reports.finance.general-ledger.print');
         Route::get('/reports/finance/accounts-payable', \App\Livewire\AccountsPayable::class)->name('reports.finance.accounts-payable');
+        
+        // Journal Sync Manager
+        Route::get('/finance/journal-sync', \App\Livewire\JournalSyncManager::class)->name('finance.journal-sync');
     });
 
     
