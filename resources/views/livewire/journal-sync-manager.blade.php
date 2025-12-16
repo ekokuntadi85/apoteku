@@ -130,6 +130,21 @@
             </button>
         </div>
 
+        <!-- Warning for Large Datasets -->
+        @if(($stats['transactions'] + $stats['purchases'] + $stats['expenses']) > 5000)
+            <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <h3 class="font-bold text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Dataset Besar Terdeteksi</h3>
+                <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
+                    Anda memiliki <strong>{{ number_format($stats['transactions'] + $stats['purchases'] + $stats['expenses']) }}</strong> records.
+                    Sync via web mungkin timeout untuk dataset besar.
+                </p>
+                <p class="text-sm font-mono bg-gray-900 text-green-400 p-3 rounded">
+                    # Jalankan via terminal (recommended):<br>
+                    php artisan finance:sync-historical-journals
+                </p>
+            </div>
+        @endif
+
         <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
             <p><strong>Sync Semua:</strong> Sinkronisasi semua transaksi, pembelian, dan pengeluaran ke journal entries</p>
             <p><strong>Fix Missing COGS:</strong> Perbaiki COGS yang hilang dengan fallback ke latest batch</p>

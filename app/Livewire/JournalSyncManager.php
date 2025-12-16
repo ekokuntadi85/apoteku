@@ -49,7 +49,21 @@ class JournalSyncManager extends Component
         $this->syncLog = "🔄 Memulai sinkronisasi penuh...\n\n";
         $this->syncProgress = 0;
         
+        // Check if dataset is too large for web sync
+        $totalData = $this->stats['transactions'] + $this->stats['purchases'] + $this->stats['expenses'];
+        
+        if ($totalData > 5000) {
+            $this->syncLog .= "⚠️ PERINGATAN: Dataset terlalu besar ({$totalData} records)\n";
+            $this->syncLog .= "   Sync via web mungkin timeout.\n\n";
+            $this->syncLog .= "📌 REKOMENDASI: Jalankan via terminal:\n";
+            $this->syncLog .= "   php artisan finance:sync-historical-journals\n\n";
+            $this->syncLog .= "Tetap melanjutkan sync via web...\n\n";
+        }
+        
         try {
+            // Increase time limit for large datasets
+            set_time_limit(600); // 10 minutes
+            
             // Run sync command
             Artisan::call('finance:sync-historical-journals');
             $output = Artisan::output();
@@ -64,7 +78,10 @@ class JournalSyncManager extends Component
             session()->flash('message', 'Sinkronisasi jurnal berhasil!');
         } catch (\Exception $e) {
             $this->syncLog .= "\n❌ Error: " . $e->getMessage() . "\n";
-            session()->flash('error', 'Sinkronisasi gagal: ' . $e->getMessage());
+            $this->syncLog .= "\n📌 Jika timeout, jalankan via terminal:\n";
+            $this->syncLog .= "   php artisan finance:sync-historical-journals\n";
+            
+            session()->flash('error', 'Sinkronisasi gagal. Coba via terminal untuk dataset besar.');
         } finally {
             $this->isSyncing = false;
         }
