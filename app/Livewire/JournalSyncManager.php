@@ -113,8 +113,15 @@ class JournalSyncManager extends Component
     public function clearAllJournals()
     {
         try {
-            JournalEntry::truncate();
+            // Disable foreign key checks temporarily
+            \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            
+            // Truncate in correct order (child first, then parent)
             \DB::table('journal_details')->truncate();
+            JournalEntry::truncate();
+            
+            // Re-enable foreign key checks
+            \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
             
             $this->syncLog = "🗑️ Semua journal entries telah dihapus.\n";
             $this->syncLog .= "Silakan jalankan 'Sync Semua' untuk membuat ulang.\n";
@@ -123,6 +130,9 @@ class JournalSyncManager extends Component
             
             session()->flash('message', 'Semua journal entries telah dihapus.');
         } catch (\Exception $e) {
+            // Make sure to re-enable foreign key checks even on error
+            \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            
             session()->flash('error', 'Gagal menghapus journals: ' . $e->getMessage());
         }
     }
