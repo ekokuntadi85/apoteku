@@ -19,6 +19,11 @@ class Purchase extends Model
         'purchase_order_id',
     ];
 
+    protected $casts = [
+        'purchase_date' => 'date',
+        'due_date' => 'date',
+    ];
+
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);

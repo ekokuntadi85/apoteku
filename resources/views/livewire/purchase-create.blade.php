@@ -97,17 +97,17 @@
                 </div>
                 <div>
                     <label for="purchase_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Beli per Satuan</label>
-                    <input type="number" step="0.01" id="purchase_price" wire:model="purchase_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" step="0.01" min="0" id="purchase_price" wire:model="purchase_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('purchase_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label for="selling_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Jual per Satuan</label>
-                    <input type="number" step="0.01" id="selling_price" wire:model="selling_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" step="0.01" min="0" id="selling_price" wire:model="selling_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('selling_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label for="stock" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kuantitas (dalam Satuan Terpilih)</label>
-                    <input type="number" id="stock" wire:model="stock" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" min="1" id="stock" wire:model="stock" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('stock') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div class="md:col-span-2">
@@ -293,6 +293,44 @@
 
     @script
     <script>
+        // Validate date format before adding item
+        document.addEventListener('DOMContentLoaded', function() {
+            const expirationDateInput = document.getElementById('expiration_date');
+            
+            if (expirationDateInput) {
+                expirationDateInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    
+                    // Skip validation if empty (nullable)
+                    if (value === '') return;
+                    
+                    // Validate format YYYY-MM-DD
+                    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                    if (!dateRegex.test(value)) {
+                        alert('Format tanggal tidak valid. Gunakan format YYYY-MM-DD (contoh: 2025-12-31)');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    // Validate year range
+                    const year = parseInt(value.split('-')[0]);
+                    if (year < 1900 || year > 2100) {
+                        alert('Tahun tidak valid. Tahun harus antara 1900-2100');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    // Validate if it's a real date
+                    const date = new Date(value);
+                    if (isNaN(date.getTime())) {
+                        alert('Tanggal tidak valid');
+                        this.value = '';
+                        return;
+                    }
+                });
+            }
+        });
+
         Livewire.on('confirm-lower-price', (message) => {
             if (confirm(message)) {
                 Livewire.dispatch('confirmedAddItem');
