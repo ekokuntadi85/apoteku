@@ -95,20 +95,18 @@ class JournalSyncManager extends Component
     
     public function clearAllJournals()
     {
-        if (confirm('Apakah Anda yakin ingin menghapus SEMUA journal entries? Ini tidak bisa di-undo!')) {
-            try {
-                JournalEntry::truncate();
-                \DB::table('journal_details')->truncate();
-                
-                $this->syncLog = "🗑️ Semua journal entries telah dihapus.\n";
-                $this->syncLog .= "Silakan jalankan 'Sync Semua' untuk membuat ulang.\n";
-                
-                $this->refreshStats();
-                
-                session()->flash('message', 'Semua journal entries telah dihapus.');
-            } catch (\Exception $e) {
-                session()->flash('error', 'Gagal menghapus journals: ' . $e->getMessage());
-            }
+        try {
+            JournalEntry::truncate();
+            \DB::table('journal_details')->truncate();
+            
+            $this->syncLog = "🗑️ Semua journal entries telah dihapus.\n";
+            $this->syncLog .= "Silakan jalankan 'Sync Semua' untuk membuat ulang.\n";
+            
+            $this->refreshStats();
+            
+            session()->flash('message', 'Semua journal entries telah dihapus.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Gagal menghapus journals: ' . $e->getMessage());
         }
     }
     
