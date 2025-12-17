@@ -10,10 +10,46 @@ use Livewire\Attributes\Title;
 class PurchaseOrderShow extends Component
 {
     public PurchaseOrder $purchaseOrder;
+    public $actualQuantities = [];
 
     public function mount(PurchaseOrder $purchaseOrder)
     {
-        $this->purchaseOrder = $purchaseOrder->load(['supplier', 'details.product', 'details.productUnit']);
+        $this->purchaseOrder = $purchaseOrder->load([
+            'supplier', 
+            'details.product', 
+            'details.productUnit', 
+            'purchase.productBatches.stockMovements'
+        ]);
+
+        $this->calculateActualQuantities();
+    }
+
+    private function calculateActualQuantities()
+    {
+        if ($this->purchaseOrder->status === 'completed' && $this->purchaseOrder->purchase) {
+            $purchaseBatches = $this->purchaseOrder->purchase->productBatches;
+
+            foreach ($this->purchaseOrder->details as $detail) {
+                // Filter batches for this product
+                $productBatches = $purchaseBatches->where('product_id', $detail->product_id);
+                
+                // Sum the initial stock (from 'PB' movements)
+                $totalBaseQty = 0;
+                foreach ($productBatches as $batch) {
+                    $initialMove = $batch->stockMovements->firstWhere('type', 'PB');
+                    if ($initialMove) {
+                        $totalBaseQty += $initialMove->quantity;
+                    }
+                }
+
+                // Convert back to the unit used in PO
+                $conversionFactor = $detail->productUnit->conversion_factor;
+                // Avoid division by zero
+                $qty = $conversionFactor > 0 ? $totalBaseQty / $conversionFactor : 0;
+                
+                $this->actualQuantities[$detail->id] = $qty;
+            }
+        }
     }
 
     public function render()

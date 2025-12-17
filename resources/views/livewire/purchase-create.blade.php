@@ -49,7 +49,10 @@
                 </div>
                 <div>
                     <label for="due_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jatuh Tempo (Opsional)</label>
-                    <input type="date" id="due_date" wire:model="due_date" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="date" id="due_date" wire:model="due_date" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 disabled:bg-gray-100 disabled:text-gray-500 dark:disabled:bg-gray-900 dark:disabled:text-gray-500" @if($payment_type === 'tunai') disabled @endif>
+                    @if($payment_type === 'tunai')
+                        <p class="text-xs text-gray-500 mt-1">Otomatis sama dengan tanggal pembelian (Tunai)</p>
+                    @endif
                     @error('due_date') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -94,17 +97,17 @@
                 </div>
                 <div>
                     <label for="purchase_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Beli per Satuan</label>
-                    <input type="number" step="0.01" id="purchase_price" wire:model="purchase_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" step="0.01" min="0" id="purchase_price" wire:model="purchase_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('purchase_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label for="selling_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Jual per Satuan</label>
-                    <input type="number" step="0.01" id="selling_price" wire:model="selling_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" step="0.01" min="0" id="selling_price" wire:model="selling_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('selling_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label for="stock" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kuantitas (dalam Satuan Terpilih)</label>
-                    <input type="number" id="stock" wire:model="stock" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" min="1" id="stock" wire:model="stock" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('stock') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div class="md:col-span-2">
@@ -250,10 +253,84 @@
     </div>
     @endif
 
+    <!-- Payment Type Selection Modal -->
+    @if($showPaymentTypeModal)
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-lg text-center transform transition-all scale-100">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800 dark:text-white">Pilih Jenis Pembelian</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-8">Silakan pilih metode pembayaran untuk transaksi ini.</p>
+            
+            <div class="grid grid-cols-2 gap-6">
+                <button wire:click="selectPaymentType('tunai')" class="flex flex-col items-center justify-center p-6 border-2 border-green-500 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors group">
+                    <div class="bg-green-100 dark:bg-green-900/50 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold text-gray-800 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400">Tunai</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400 mt-2">Jatuh tempo = hari ini. <br>Status otomatis Lunas.</span>
+                </button>
+
+                <button wire:click="selectPaymentType('tempo')" class="flex flex-col items-center justify-center p-6 border-2 border-blue-500 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group">
+                    <div class="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">Tempo</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400 mt-2">Atur tanggal jatuh tempo.<br>Status belum lunas.</span>
+                </button>
+            </div>
+
+            <div class="mt-8 text-xs text-gray-400">
+                <a href="{{ route('purchases.index') }}" class="underline hover:text-gray-600 dark:hover:text-gray-300">Batal / Kembali</a>
+            </div>
+        </div>
+    </div>
+    @endif
+
 
 
     @script
     <script>
+        // Validate date format before adding item
+        document.addEventListener('DOMContentLoaded', function() {
+            const expirationDateInput = document.getElementById('expiration_date');
+            
+            if (expirationDateInput) {
+                expirationDateInput.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    
+                    // Skip validation if empty (nullable)
+                    if (value === '') return;
+                    
+                    // Validate format YYYY-MM-DD
+                    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                    if (!dateRegex.test(value)) {
+                        alert('Format tanggal tidak valid. Gunakan format YYYY-MM-DD (contoh: 2025-12-31)');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    // Validate year range
+                    const year = parseInt(value.split('-')[0]);
+                    if (year < 1900 || year > 2100) {
+                        alert('Tahun tidak valid. Tahun harus antara 1900-2100');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    // Validate if it's a real date
+                    const date = new Date(value);
+                    if (isNaN(date.getTime())) {
+                        alert('Tanggal tidak valid');
+                        this.value = '';
+                        return;
+                    }
+                });
+            }
+        });
+
         Livewire.on('confirm-lower-price', (message) => {
             if (confirm(message)) {
                 Livewire.dispatch('confirmedAddItem');

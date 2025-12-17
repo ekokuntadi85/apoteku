@@ -38,6 +38,9 @@ class PurchaseCreate extends Component
     public $lastKnownPurchasePrice; // Properti baru untuk menyimpan harga beli terakhir
     public $lastKnownSellingPrice; // Last known selling price
     public $currentStock = 0; // Properti baru untuk stok saat ini
+    
+    public $payment_type = null; // 'tunai' or 'tempo'
+    public $showPaymentTypeModal = true; // Show modal on load
 
 
     public $selectedProductUnits = []; // New property for available units for selected product
@@ -56,8 +59,8 @@ class PurchaseCreate extends Component
     protected $rules = [
         'supplier_id' => 'required|exists:suppliers,id',
         'invoice_number' => 'required|string|max:255|unique:purchases,invoice_number',
-        'purchase_date' => 'required|date',
-        'due_date' => 'nullable|date',
+        'purchase_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+        'due_date' => 'nullable|date_format:Y-m-d|after_or_equal:purchase_date',
         'total_purchase_price' => 'required|numeric|min:0',
         'purchase_items' => 'required|array|min:1',
         'purchase_items.*.product_id' => 'required|exists:products,id',
@@ -66,7 +69,7 @@ class PurchaseCreate extends Component
         'purchase_items.*.purchase_price' => 'required|numeric|min:0',
         'purchase_items.*.selling_price' => 'required|numeric|min:0',
         'purchase_items.*.stock' => 'required|integer|min:1', // This stock is in base units now
-        'purchase_items.*.expiration_date' => 'nullable|date',
+        'purchase_items.*.expiration_date' => 'nullable|date_format:Y-m-d|after:purchase_date|before:2100-01-01',
     ];
 
     protected $itemRules = [
@@ -75,7 +78,7 @@ class PurchaseCreate extends Component
         'batch_number' => 'nullable|string|max:255',
         'purchase_price' => 'required|numeric|min:0',
         'stock' => 'required|integer|min:1',
-        'expiration_date' => 'nullable|date',
+        'expiration_date' => 'nullable|date_format:Y-m-d|after:today|before:2100-01-01',
     ];
 
     protected $messages = [
@@ -84,8 +87,10 @@ class PurchaseCreate extends Component
         'invoice_number.required' => 'Nomor invoice wajib diisi.',
         'invoice_number.unique' => 'Nomor invoice sudah ada.',
         'purchase_date.required' => 'Tanggal pembelian wajib diisi.',
-        'purchase_date.date' => 'Tanggal pembelian tidak valid.',
-        'due_date.date' => 'Tanggal jatuh tempo tidak valid.',
+        'purchase_date.date_format' => 'Format tanggal pembelian tidak valid. Gunakan format YYYY-MM-DD.',
+        'purchase_date.before_or_equal' => 'Tanggal pembelian tidak boleh di masa depan.',
+        'due_date.date_format' => 'Format tanggal jatuh tempo tidak valid. Gunakan format YYYY-MM-DD.',
+        'due_date.after_or_equal' => 'Tanggal jatuh tempo harus sama atau setelah tanggal pembelian.',
         'total_purchase_price.required' => 'Total pembelian wajib dihitung.',
         'total_purchase_price.numeric' => 'Total pembelian harus berupa angka.',
         'total_purchase_price.min' => 'Total pembelian tidak boleh negatif.',
@@ -104,7 +109,12 @@ class PurchaseCreate extends Component
         'purchase_items.*.purchase_price.required' => 'Harga beli wajib diisi.',
         'purchase_items.*.purchase_price.numeric' => 'Harga beli harus berupa angka.',
         'purchase_items.*.purchase_price.min' => 'Harga beli tidak boleh negatif.',
-        'purchase_items.*.expiration_date.date' => 'Tanggal kadaluarsa tidak valid.',
+        'purchase_items.*.expiration_date.date_format' => 'Format tanggal kadaluarsa tidak valid. Gunakan format YYYY-MM-DD.',
+        'purchase_items.*.expiration_date.before' => 'Tanggal kadaluarsa tidak valid. Tahun maksimal 2100.',
+        'purchase_items.*.expiration_date.after' => 'Tanggal kadaluarsa harus setelah tanggal pembelian.',
+        'expiration_date.date_format' => 'Format tanggal kadaluarsa tidak valid. Gunakan format YYYY-MM-DD.',
+        'expiration_date.before' => 'Tanggal kadaluarsa tidak valid. Tahun maksimal 2100.',
+        'expiration_date.after' => 'Tanggal kadaluarsa harus di masa depan.',
         'newSellingPrice.required' => 'Harga jual baru wajib diisi.',
         'newSellingPrice.numeric' => 'Harga jual baru harus berupa angka.',
         'newSellingPrice.min' => 'Harga jual baru tidak boleh lebih rendah dari harga beli.',
@@ -187,6 +197,7 @@ class PurchaseCreate extends Component
     public function mount()
     {
         $this->purchase_date = now()->format('Y-m-d');
+        // Due date defaults to 30 days, but will be overriden if Tunai is selected
         $this->due_date = now()->addDays(30)->format('Y-m-d');
 
         $po_id = request()->query('po_id');
@@ -195,10 +206,32 @@ class PurchaseCreate extends Component
         }
     }
 
+    public function selectPaymentType($type)
+    {
+        $this->payment_type = $type;
+        $this->showPaymentTypeModal = false;
+
+        if ($type === 'tunai') {
+            $this->due_date = $this->purchase_date;
+            $this->payment_status = 'paid';
+        } else {
+            // Tempo / Credit
+            // Default to 30 days if not set or if it was same as purchase date (likely from tunai toggle)
+            if ($this->due_date === $this->purchase_date) {
+                $this->due_date = \Illuminate\Support\Carbon::parse($this->purchase_date)->addDays(30)->format('Y-m-d');
+            }
+            $this->payment_status = 'unpaid';
+        }
+    }
+
     public function updatedPurchaseDate($value)
     {
         if ($value) {
-            $this->due_date = \Illuminate\Support\Carbon::parse($value)->addDays(30)->format('Y-m-d');
+            if ($this->payment_type === 'tunai') {
+                $this->due_date = $value;
+            } else {
+                $this->due_date = \Illuminate\Support\Carbon::parse($value)->addDays(30)->format('Y-m-d');
+            }
         } else {
             $this->due_date = null;
         }
@@ -462,6 +495,12 @@ class PurchaseCreate extends Component
             $this->due_date = now()->format('Y-m-d');
         }
 
+        // Force rules for Tunai
+        if ($this->payment_type === 'tunai') {
+             $this->payment_status = 'paid';
+             $this->due_date = $this->purchase_date;
+        }
+
         $this->validate();
 
         DB::transaction(function () {
@@ -472,6 +511,7 @@ class PurchaseCreate extends Component
                 'total_price' => $this->total_purchase_price,
                 'supplier_id' => $this->supplier_id,
                 'payment_status' => $this->payment_status,
+                'purchase_order_id' => $this->selectedPoId,
             ]);
 
             foreach ($this->purchase_items as $item) {
@@ -582,6 +622,11 @@ class PurchaseCreate extends Component
         $this->invoice_number = '';
         $this->purchase_date = now()->format('Y-m-d');
         $this->due_date = now()->addDays(30)->format('Y-m-d');
+        
+        // Reset payment type logic
+        $this->payment_type = null;
+        $this->showPaymentTypeModal = true;
+
         $this->total_purchase_price = 0;
         $this->purchase_items = [];
         $this->payment_status = 'unpaid';

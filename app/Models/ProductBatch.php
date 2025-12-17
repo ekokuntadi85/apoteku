@@ -19,6 +19,10 @@ class ProductBatch extends Model
         'product_unit_id',
     ];
 
+    protected $casts = [
+        'expiration_date' => 'date',
+    ];
+
     public function product()
     {
         return $this->belongsTo(Product::class);
@@ -32,5 +36,10 @@ class ProductBatch extends Model
     public function productUnit()
     {
         return $this->belongsTo(ProductUnit::class);
+    }
+
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
     }
 }

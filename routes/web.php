@@ -35,6 +35,10 @@ use App\Livewire\DatabaseBackupManager;
 use App\Livewire\DatabaseRestoreManager;
 use App\Livewire\ProductImportManager;
 use App\Livewire\SlowProductImportManager;
+use App\Livewire\ExpenseManager;
+use App\Livewire\ExpenseCreate;
+use App\Livewire\ExpenseEdit;
+use App\Livewire\ExpenseCategoryManager;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReportController;
 
@@ -138,6 +142,25 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/stock-opname', InventoryCount::class)->name('stock-opname.index');
         Route::post('/stock-opnames', [\App\Http\Controllers\StockOpnameController::class, 'store']);
         Route::post('/stock-opnames/{stockOpname}/apply', [\App\Http\Controllers\StockOpnameController::class, 'apply'])->name('stock-opnames.apply');
+    });
+
+    // Finance & Expense Modules
+    Route::middleware(['can:access-finance'])->group(function () {
+        Route::get('/expenses', ExpenseManager::class)->name('expenses.index');
+        Route::get('/expenses/create', ExpenseCreate::class)->name('expenses.create');
+        Route::get('/expenses/{expense}/edit', ExpenseEdit::class)->name('expenses.edit');
+        Route::get('/expense-categories', ExpenseCategoryManager::class)->name('expense-categories.index');
+        Route::get('/journal-entries/create', \App\Livewire\JournalEntryCreate::class)->name('journal-entries.create');
+        
+        // Financial Reports
+        Route::get('/reports/finance/income-statement', \App\Livewire\FinancialReports\IncomeStatement::class)->name('reports.finance.income-statement');
+        Route::get('/reports/finance/balance-sheet', \App\Livewire\FinancialReports\BalanceSheet::class)->name('reports.finance.balance-sheet');
+        Route::get('/reports/finance/general-ledger', \App\Livewire\FinancialReports\GeneralLedger::class)->name('reports.finance.general-ledger');
+        Route::get('/reports/finance/general-ledger/print', [\App\Http\Controllers\FinancialReportPrintController::class, 'generalLedger'])->name('reports.finance.general-ledger.print');
+        Route::get('/reports/finance/accounts-payable', \App\Livewire\AccountsPayable::class)->name('reports.finance.accounts-payable');
+        
+        // Journal Sync Manager
+        Route::get('/finance/journal-sync', \App\Livewire\JournalSyncManager::class)->name('finance.journal-sync');
     });
 
     

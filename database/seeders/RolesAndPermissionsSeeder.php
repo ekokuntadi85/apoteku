@@ -29,6 +29,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-settings',
             'manage-users',
             'delete-purchase',
+            'access-finance',
         ];
 
         foreach ($permissions as $permission) {
@@ -56,6 +57,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'access-purchases',
             'manage-settings',
             'delete-purchase',
+            'access-finance',
         ]);
 
         $roleKasir = Role::firstOrCreate(['name' => 'kasir']);
