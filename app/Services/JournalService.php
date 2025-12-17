@@ -21,13 +21,19 @@ class JournalService
      */
     public static function createEntry($date, $reference, $description, $debits, $credits)
     {
-        DB::transaction(function () use ($date, $reference, $description, $debits, $credits) {
+        return DB::transaction(function () use ($date, $reference, $description, $debits, $credits) {
             $totalDebit = collect($debits)->sum('amount');
             $totalCredit = collect($credits)->sum('amount');
 
-            if (abs($totalDebit - $totalCredit) > 1) {
-                Log::error("Journal Entry Imbalanced: $reference. Debit: $totalDebit, Credit: $totalCredit");
-                return; // Or throw exception
+            // Use small tolerance for floating point comparison (0.01 = 1 cent)
+            if (abs($totalDebit - $totalCredit) > 0.01) {
+                $message = "Journal Entry Imbalanced: $reference. Debit: $totalDebit, Credit: $totalCredit";
+                Log::error($message, [
+                    'debits' => $debits,
+                    'credits' => $credits,
+                    'difference' => abs($totalDebit - $totalCredit)
+                ]);
+                throw new \Exception($message); // Throw exception to trigger rollback
             }
 
             $entry = JournalEntry::create([

@@ -8,6 +8,8 @@ use App\Models\Account;
 
 class TransactionObserver
 {
+    use JournalCleanupTrait;
+    
     public function created(Transaction $transaction)
     {
         $this->recordJournal($transaction);
@@ -93,5 +95,29 @@ class TransactionObserver
         // Journalizing per item is actually fine for granular data, just verbose.
         // OR: Sum it up at the end?
         // Since we want "Automatic", let's modify `TransactionDetailObserver` to also record COGS.
+    }
+    
+    /**
+     * Handle the Transaction "deleting" event.
+     * Clean up all related journal entries when transaction is deleted.
+     */
+    public function deleting(Transaction $transaction)
+    {
+        \Log::info('TransactionObserver::deleting triggered', [
+            'invoice' => $transaction->invoice_number
+        ]);
+        
+        // Delete revenue journal (INV-{invoice_number})
+        $this->deleteRelatedJournals('INV-', $transaction->invoice_number);
+        
+        // Delete payment journal if exists (PAY-INV-{invoice_number})
+        $this->deleteRelatedJournals('PAY-INV-', $transaction->invoice_number);
+        
+        // Delete all COGS journals (COGS-{invoice_number}-*)
+        $this->deleteRelatedJournals('COGS-', $transaction->invoice_number);
+        
+        \Log::info('All related journal entries deleted for transaction', [
+            'invoice' => $transaction->invoice_number
+        ]);
     }
 }

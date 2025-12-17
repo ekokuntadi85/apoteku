@@ -7,6 +7,8 @@ use App\Services\JournalService;
 
 class PurchaseObserver
 {
+    use JournalCleanupTrait;
+    
     public function created(Purchase $purchase)
     {
         // 1. Record Inventory Increase
@@ -76,5 +78,26 @@ class PurchaseObserver
                 \Log::warning('Payment journal already exists', ['reference' => $payRef]);
             }
         }
+    }
+    
+    /**
+     * Handle the Purchase "deleting" event.
+     * Clean up all related journal entries when purchase is deleted.
+     */
+    public function deleting(Purchase $purchase)
+    {
+        \Log::info('PurchaseObserver::deleting triggered', [
+            'invoice' => $purchase->invoice_number
+        ]);
+        
+        // Delete purchase journal (PUR-{invoice_number})
+        $this->deleteRelatedJournals('PUR-', $purchase->invoice_number);
+        
+        // Delete payment journal if exists (PAY-PUR-{invoice_number})
+        $this->deleteRelatedJournals('PAY-PUR-', $purchase->invoice_number);
+        
+        \Log::info('All related journal entries deleted for purchase', [
+            'invoice' => $purchase->invoice_number
+        ]);
     }
 }

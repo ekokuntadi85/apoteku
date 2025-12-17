@@ -7,6 +7,8 @@ use App\Services\JournalService;
 
 class ExpenseObserver
 {
+    use JournalCleanupTrait;
+    
     public function created(Expense $expense)
     {
         // Debit: Expense Account (507 - Beban Lain-lain for now, or mapped)
@@ -36,5 +38,23 @@ class ExpenseObserver
                 ['account_code' => '101', 'amount' => $expense->amount] // Credit Cash
             ]
         );
+    }
+    
+    /**
+     * Handle the Expense "deleting" event.
+     * Clean up all related journal entries when expense is deleted.
+     */
+    public function deleting(Expense $expense)
+    {
+        \Log::info('ExpenseObserver::deleting triggered', [
+            'expense_id' => $expense->id
+        ]);
+        
+        // Delete expense journal (EXP-{id})
+        $this->deleteJournalByReference('EXP-' . $expense->id);
+        
+        \Log::info('Journal entry deleted for expense', [
+            'expense_id' => $expense->id
+        ]);
     }
 }

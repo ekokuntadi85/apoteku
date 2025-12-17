@@ -59,8 +59,8 @@ class PurchaseCreate extends Component
     protected $rules = [
         'supplier_id' => 'required|exists:suppliers,id',
         'invoice_number' => 'required|string|max:255|unique:purchases,invoice_number',
-        'purchase_date' => 'required|date_format:Y-m-d',
-        'due_date' => 'nullable|date_format:Y-m-d',
+        'purchase_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+        'due_date' => 'nullable|date_format:Y-m-d|after_or_equal:purchase_date',
         'total_purchase_price' => 'required|numeric|min:0',
         'purchase_items' => 'required|array|min:1',
         'purchase_items.*.product_id' => 'required|exists:products,id',
@@ -69,7 +69,7 @@ class PurchaseCreate extends Component
         'purchase_items.*.purchase_price' => 'required|numeric|min:0',
         'purchase_items.*.selling_price' => 'required|numeric|min:0',
         'purchase_items.*.stock' => 'required|integer|min:1', // This stock is in base units now
-        'purchase_items.*.expiration_date' => 'nullable|date_format:Y-m-d|before:2100-01-01|after:1900-01-01',
+        'purchase_items.*.expiration_date' => 'nullable|date_format:Y-m-d|after:purchase_date|before:2100-01-01',
     ];
 
     protected $itemRules = [
@@ -78,7 +78,7 @@ class PurchaseCreate extends Component
         'batch_number' => 'nullable|string|max:255',
         'purchase_price' => 'required|numeric|min:0',
         'stock' => 'required|integer|min:1',
-        'expiration_date' => 'nullable|date_format:Y-m-d|before:2100-01-01|after:1900-01-01',
+        'expiration_date' => 'nullable|date_format:Y-m-d|after:today|before:2100-01-01',
     ];
 
     protected $messages = [
@@ -88,7 +88,9 @@ class PurchaseCreate extends Component
         'invoice_number.unique' => 'Nomor invoice sudah ada.',
         'purchase_date.required' => 'Tanggal pembelian wajib diisi.',
         'purchase_date.date_format' => 'Format tanggal pembelian tidak valid. Gunakan format YYYY-MM-DD.',
+        'purchase_date.before_or_equal' => 'Tanggal pembelian tidak boleh di masa depan.',
         'due_date.date_format' => 'Format tanggal jatuh tempo tidak valid. Gunakan format YYYY-MM-DD.',
+        'due_date.after_or_equal' => 'Tanggal jatuh tempo harus sama atau setelah tanggal pembelian.',
         'total_purchase_price.required' => 'Total pembelian wajib dihitung.',
         'total_purchase_price.numeric' => 'Total pembelian harus berupa angka.',
         'total_purchase_price.min' => 'Total pembelian tidak boleh negatif.',
@@ -108,11 +110,11 @@ class PurchaseCreate extends Component
         'purchase_items.*.purchase_price.numeric' => 'Harga beli harus berupa angka.',
         'purchase_items.*.purchase_price.min' => 'Harga beli tidak boleh negatif.',
         'purchase_items.*.expiration_date.date_format' => 'Format tanggal kadaluarsa tidak valid. Gunakan format YYYY-MM-DD.',
-        'purchase_items.*.expiration_date.before' => 'Tanggal kadaluarsa tidak valid. Tahun harus antara 1900-2100.',
-        'purchase_items.*.expiration_date.after' => 'Tanggal kadaluarsa tidak valid. Tahun harus antara 1900-2100.',
+        'purchase_items.*.expiration_date.before' => 'Tanggal kadaluarsa tidak valid. Tahun maksimal 2100.',
+        'purchase_items.*.expiration_date.after' => 'Tanggal kadaluarsa harus setelah tanggal pembelian.',
         'expiration_date.date_format' => 'Format tanggal kadaluarsa tidak valid. Gunakan format YYYY-MM-DD.',
-        'expiration_date.before' => 'Tanggal kadaluarsa tidak valid. Tahun harus antara 1900-2100.',
-        'expiration_date.after' => 'Tanggal kadaluarsa tidak valid. Tahun harus antara 1900-2100.',
+        'expiration_date.before' => 'Tanggal kadaluarsa tidak valid. Tahun maksimal 2100.',
+        'expiration_date.after' => 'Tanggal kadaluarsa harus di masa depan.',
         'newSellingPrice.required' => 'Harga jual baru wajib diisi.',
         'newSellingPrice.numeric' => 'Harga jual baru harus berupa angka.',
         'newSellingPrice.min' => 'Harga jual baru tidak boleh lebih rendah dari harga beli.',
