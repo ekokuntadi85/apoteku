@@ -17,6 +17,11 @@ services:
       - db
     env_file:
       - ./.env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    extra_hosts:
+      - "api.dropbox.com:162.125.81.19"
 
   nginx:
     image: nginx:1.25-alpine
