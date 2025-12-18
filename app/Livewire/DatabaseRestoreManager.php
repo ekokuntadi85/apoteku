@@ -283,6 +283,14 @@ class DatabaseRestoreManager extends Component
                  $this->restoreLog .= "✅ Tabel Expense Categories valid.\n";
             }
             
+            // Check Payments (Credit Sales)
+            if (\Schema::hasTable('payments')) {
+                 $paymentCount = \DB::table('payments')->count();
+                 $this->restoreLog .= "✅ Tabel Payments valid (Fitur Penjualan Kredit) - {$paymentCount} data.\n";
+            } else {
+                 $this->restoreLog .= "⚠️ Tabel Payments belum ada (akan dibuat via migration).\n";
+            }
+            
             // Check Journal Entries
             if (\Schema::hasTable('journal_entries')) {
                  $entryCount = \DB::table('journal_entries')->count();

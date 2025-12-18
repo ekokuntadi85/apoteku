@@ -108,6 +108,7 @@ Route::middleware(['auth'])->group(function () {
         
         // Accounts Receivable Module
         Route::get('/accounts-receivable', AccountsReceivable::class)->name('accounts-receivable.index');
+        Route::get('/payments/create/{transaction}', \App\Livewire\PaymentCreate::class)->name('payments.create');
         
         Route::get('/invoices/create', InvoiceCreate::class)->name('invoices.create');
         

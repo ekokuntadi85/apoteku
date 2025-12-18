@@ -29,21 +29,17 @@ class AccountsReceivable extends Component
                                 })
                                 ->when($this->filterStatus !== 'all', function ($query) {
                                     // Apply status filter
-                                    $query->where('payment_status', $this->filterStatus);
+                                    if ($this->filterStatus === 'unpaid') {
+                                        // Unpaid includes both 'unpaid' and 'partial'
+                                        $query->whereIn('payment_status', ['unpaid', 'partial']);
+                                    } else {
+                                        $query->where('payment_status', $this->filterStatus);
+                                    }
                                 })
                                 ->latest()
                                 ->paginate(10);
 
         return view('livewire.accounts-receivable', compact('transactions'));
-    }
-
-    public function markAsPaid($transactionId)
-    {
-        $transaction = Transaction::findOrFail($transactionId);
-        $transaction->payment_status = 'paid';
-        $transaction->save();
-
-        session()->flash('message', 'Transaksi berhasil ditandai sebagai lunas.');
     }
 
     public function updatingSearch()

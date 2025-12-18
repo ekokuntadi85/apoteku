@@ -19,6 +19,14 @@ class Transaction extends Model
         'due_date',
         'user_id',
         'customer_id',
+        'invoice_type',
+        'discount_amount',
+        'grand_total',
+        'paid_at',
+    ];
+
+    protected $casts = [
+        'paid_at' => 'datetime',
     ];
 
     public function user()
@@ -34,6 +42,11 @@ class Transaction extends Model
     public function transactionDetails()
     {
         return $this->hasMany(TransactionDetail::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 
     protected static function booted()

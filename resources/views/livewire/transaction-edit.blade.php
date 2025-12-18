@@ -43,6 +43,18 @@
                     <input type="date" id="due_date" wire:model="due_date" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('due_date') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
+                
+                <!-- Invoice Type (only for invoice type transactions) -->
+                @if($type === 'invoice')
+                <div>
+                    <label for="invoice_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jenis Invoice</label>
+                    <select id="invoice_type" wire:model.live="invoice_type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                        <option value="normal">📄 Penjualan Normal</option>
+                        <option value="loan">🤝 Pinjaman Barang</option>
+                    </select>
+                    @error('invoice_type') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                </div>
+                @endif
             </div>
         </div>
 
@@ -116,16 +128,40 @@
                     <p class="text-center text-gray-500 dark:text-gray-400 py-4">Keranjang masih kosong.</p>
                 @endforelse
             </div>
-            <div class="mt-6 pt-4 border-t-2 border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">Total</span>
-                <span class="text-xl font-bold text-gray-900 dark:text-white">Rp {{ number_format($total_price, 0) }}</span>
+            <div class="mt-6 space-y-3">
+                <!-- Subtotal -->
+                <div class="pt-4 border-t-2 border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                    <span class="text-lg font-semibold text-gray-700 dark:text-gray-300">Subtotal</span>
+                    <span class="text-lg font-semibold text-gray-900 dark:text-white">Rp {{ number_format($total_price, 0) }}</span>
+                </div>
+                
+                <!-- Discount (only for normal invoice) -->
+                @if($type === 'invoice' && $invoice_type === 'normal')
+                <div class="flex justify-between items-center">
+                    <label class="font-semibold text-gray-700 dark:text-gray-300">Diskon</label>
+                    <div class="flex items-center">
+                        <span class="mr-2 text-gray-600 dark:text-gray-400">Rp</span>
+                        <input type="number" wire:model.live.debounce.500ms="discount_amount" step="0.01" min="0" max="{{ $total_price }}"
+                               class="w-40 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600" 
+                               placeholder="0">
+                    </div>
+                </div>
+                @error('discount_amount') <span class="text-red-500 text-xs mt-1 block text-right">{{ $message }}</span> @enderror
+                @endif
+                
+                <!-- Grand Total -->
+                <div class="pt-3 border-t-2 border-gray-300 dark:border-gray-500 flex justify-between items-center">
+                    <span class="text-xl font-bold text-gray-900 dark:text-white">Grand Total</span>
+                    <span class="text-xl font-bold text-green-600 dark:text-green-400">Rp {{ number_format($grand_total, 0) }}</span>
+                </div>
             </div>
         </div>
 
         <!-- Actions -->
         <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
             <a href="{{ route('transactions.show', $transactionId) }}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 dark:hover:bg-gray-500 mt-4 sm:mt-0">Batal</a>
-            <button type="button" wire:click="saveTransaction()" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">
+            <button type="button" wire:click="saveTransaction()" 
+                    class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">
                 Update Transaksi
             </button>
         </div>
