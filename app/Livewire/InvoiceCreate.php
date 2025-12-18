@@ -41,20 +41,32 @@ class InvoiceCreate extends Component
     public $type = 'invoice';
     public $payment_status = 'unpaid';
     public $invoiceNumber; // Make sure this is public
+    
+    // New properties for invoice type and discount
+    public $invoice_type = 'normal';
+    public $discount_amount = 0;
+    public $grand_total = 0;
+    
+    // Modal control
+    public $showTypeModal = true;
 
     protected $rules = [
         'customer_id' => 'required|exists:customers,id',
-        'due_date' => 'required|date',
+        'due_date' => 'required|date|after_or_equal:today|before:+90 days',
         'invoice_items' => 'required|array|min:1',
         'invoice_items.*.product_id' => 'required|exists:products,id',
         'invoice_items.*.quantity' => 'required|integer|min:1',
         'invoice_items.*.price' => 'required|numeric|min:0',
+        'invoice_type' => 'required|in:normal,loan',
+        'discount_amount' => 'nullable|numeric|min:0',
     ];
 
     protected $messages = [
         'customer_id.required' => 'Pelanggan wajib dipilih.',
         'due_date.required' => 'Tanggal jatuh tempo wajib diisi.',
         'due_date.date' => 'Tanggal jatuh tempo tidak valid.',
+        'due_date.after_or_equal' => 'Tanggal jatuh tempo tidak boleh di masa lalu.',
+        'due_date.before' => 'Tanggal jatuh tempo maksimal 90 hari ke depan.',
         'invoice_items.required' => 'Setidaknya ada satu item invoice.',
         'invoice_items.min' => 'Setidaknya ada satu item invoice.',
         'invoice_items.*.product_id.required' => 'Produk wajib dipilih.',
@@ -65,13 +77,20 @@ class InvoiceCreate extends Component
         'invoice_items.*.price.required' => 'Harga satuan wajib diisi.',
         'invoice_items.*.price.numeric' => 'Harga satuan harus berupa angka.',
         'invoice_items.*.price.min' => 'Harga satuan tidak boleh negatif.',
+        'discount_amount.numeric' => 'Diskon harus berupa angka.',
+        'discount_amount.min' => 'Diskon tidak boleh negatif.',
     ];
 
     public function mount()
     {
-        // Default values are already set as public properties
-        // $this->type = 'invoice';
-        // $this->payment_status = 'unpaid';
+        // Show type selection modal on mount
+        $this->showTypeModal = true;
+    }
+    
+    public function selectInvoiceType($type)
+    {
+        $this->invoice_type = $type;
+        $this->showTypeModal = false;
     }
 
     public function updatedSearchProduct($value)
@@ -107,7 +126,17 @@ class InvoiceCreate extends Component
     {
         $selectedUnit = collect($this->units)->firstWhere('id', $this->selected_unit_id);
         if ($selectedUnit) {
-            $this->price = $selectedUnit['selling_price'];
+            if ($this->invoice_type === 'loan') {
+                // For loan, use purchase_price from latest batch
+                $batch = \App\Models\ProductBatch::where('product_id', $this->product_id)
+                                    ->where('product_unit_id', $this->selected_unit_id)
+                                    ->orderBy('created_at', 'desc')
+                                    ->first();
+                $this->price = $batch ? $batch->purchase_price : $selectedUnit['selling_price'];
+            } else {
+                // For normal, use selling_price
+                $this->price = $selectedUnit['selling_price'];
+            }
         }
     }
 
@@ -126,9 +155,14 @@ class InvoiceCreate extends Component
         // Convert quantity to base unit for stock checking
         $quantityInBaseUnit = $this->quantity * $selectedUnit['conversion_factor'];
 
+        // Validate stock availability
         if ($product->total_stock < $quantityInBaseUnit) {
+            // Show error notification
+            session()->flash('error', 'Stok tidak mencukupi! Stok tersedia: ' . floor($product->total_stock / $selectedUnit['conversion_factor']) . ' ' . $selectedUnit['name'] . ' (' . $product->total_stock . ' unit dasar)');
+            
+            // Also set validation error
             throw ValidationException::withMessages([
-                'quantity' => 'Stok produk tidak mencukupi. Stok tersedia: ' . floor($product->total_stock / $selectedUnit['conversion_factor']) . ' ' . $selectedUnit['name'] . ' (' . $product->total_stock . ' Pcs)',
+                'quantity' => 'Stok produk tidak mencukupi. Stok tersedia: ' . floor($product->total_stock / $selectedUnit['conversion_factor']) . ' ' . $selectedUnit['name'] . ' (' . $product->total_stock . ' unit dasar)',
             ]);
         }
 
@@ -144,6 +178,9 @@ class InvoiceCreate extends Component
 
         $this->calculateTotalPrice();
         $this->resetItemForm();
+        
+        // Success notification
+        session()->flash('success', 'Item berhasil ditambahkan ke invoice');
     }
 
     public function removeItem($index)
@@ -156,6 +193,62 @@ class InvoiceCreate extends Component
     private function calculateTotalPrice()
     {
         $this->total_price = array_sum(array_column($this->invoice_items, 'subtotal'));
+        $this->calculateGrandTotal();
+    }
+    
+    public function updatedInvoiceType()
+    {
+        if ($this->invoice_type === 'loan') {
+            $this->discount_amount = 0; // No discount for loans
+            $this->recalculatePricesForLoan();
+        } else {
+            // When switching back to normal, recalculate with selling prices
+            $this->recalculatePricesForNormal();
+        }
+        $this->calculateGrandTotal();
+    }
+    
+    public function updatedDiscountAmount()
+    {
+        // Validate discount doesn't exceed total
+        if ($this->discount_amount > $this->total_price) {
+            $this->discount_amount = $this->total_price;
+        }
+        $this->calculateGrandTotal();
+    }
+    
+    private function calculateGrandTotal()
+    {
+        $this->grand_total = $this->total_price - $this->discount_amount;
+    }
+    
+    private function recalculatePricesForLoan()
+    {
+        // For loan type, use purchase_price from latest batch
+        foreach ($this->invoice_items as $index => &$item) {
+            $batch = \App\Models\ProductBatch::where('product_id', $item['product_id'])
+                                ->where('product_unit_id', $item['product_unit_id'])
+                                ->orderBy('created_at', 'desc')
+                                ->first();
+            if ($batch) {
+                $item['price'] = $batch->purchase_price;
+                $item['subtotal'] = $item['quantity'] * $item['price'];
+            }
+        }
+        $this->calculateTotalPrice();
+    }
+    
+    private function recalculatePricesForNormal()
+    {
+        // For normal type, use selling_price from product_unit
+        foreach ($this->invoice_items as $index => &$item) {
+            $unit = \App\Models\ProductUnit::find($item['product_unit_id']);
+            if ($unit) {
+                $item['price'] = $unit->selling_price;
+                $item['subtotal'] = $item['quantity'] * $item['price'];
+            }
+        }
+        $this->calculateTotalPrice();
     }
 
     private function resetItemForm()
@@ -178,6 +271,9 @@ class InvoiceCreate extends Component
                 'type' => $this->type,
                 'payment_status' => $this->payment_status,
                 'total_price' => $this->total_price,
+                'discount_amount' => $this->discount_amount,
+                'grand_total' => $this->grand_total,
+                'invoice_type' => $this->invoice_type,
                 'amount_paid' => 0, // For invoice, amount paid is 0 initially
                 'change' => 0,
                 'due_date' => $this->due_date,
@@ -199,7 +295,8 @@ class InvoiceCreate extends Component
             }
         });
 
-        session()->flash('message', 'Invoice berhasil dicatat dengan No. Invoice: ' . $this->invoiceNumber);
+        $invoiceTypeLabel = $this->invoice_type === 'loan' ? 'Pinjaman Barang' : 'Invoice';
+        session()->flash('message', $invoiceTypeLabel . ' berhasil dicatat dengan No. Invoice: ' . $this->invoiceNumber);
         return redirect()->route('transactions.index');
     }
 

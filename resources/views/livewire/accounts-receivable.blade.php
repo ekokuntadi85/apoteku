@@ -35,14 +35,23 @@
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">Rp {{ number_format($transaction->total_price, 0) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $transaction->due_date ? \Carbon\Carbon::parse($transaction->due_date)->format('d/m/Y') : '-' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                {{ $transaction->payment_status == 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' }}">
-                                {{ ucfirst($transaction->payment_status) }}
-                            </span>
+                            @if($transaction->payment_status == 'paid')
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                    Lunas
+                                </span>
+                            @elseif($transaction->payment_status == 'partial')
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                                    Dibayar Sebagian
+                                </span>
+                            @else
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                                    Belum Lunas
+                                </span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            @if($transaction->payment_status === 'unpaid')
-                                <button wire:click="markAsPaid({{ $transaction->id }})" onclick="confirm('Apakah Anda yakin ingin menandai transaksi ini sebagai lunas?') || event.stopImmediatePropagation()" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200">Lunas</button>
+                            @if($transaction->payment_status !== 'paid')
+                                <a href="{{ route('payments.create', $transaction->id) }}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200">Bayar</a>
                             @endif
                             <a href="{{ route('transactions.show', $transaction->id) }}" class="ml-4 text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">Lihat</a>
                         </td>
@@ -66,10 +75,19 @@
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">#{{ $transaction->invoice_number ?? '-' }}</h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ $transaction->customer->name ?? '-' }}</p>
                 </div>
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    {{ $transaction->payment_status == 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' }}">
-                    {{ ucfirst($transaction->payment_status) }}
-                </span>
+                @if($transaction->payment_status == 'paid')
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                        Lunas
+                    </span>
+                @elseif($transaction->payment_status == 'partial')
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                        Dibayar Sebagian
+                    </span>
+                @else
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                        Belum Lunas
+                    </span>
+                @endif
             </div>
             <div class="mt-2">
                 <div class="flex items-center justify-between text-sm">
@@ -82,8 +100,8 @@
                 </div>
             </div>
             <div class="flex justify-end mt-4 space-x-2">
-                @if($transaction->payment_status === 'unpaid')
-                    <button wire:click="markAsPaid({{ $transaction->id }})" onclick="confirm('Apakah Anda yakin ingin menandai transaksi ini sebagai lunas?') || event.stopImmediatePropagation()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-blue-600 dark:hover:bg-blue-700">Lunas</button>
+                @if($transaction->payment_status !== 'paid')
+                    <a href="{{ route('payments.create', $transaction->id) }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-blue-600 dark:hover:bg-blue-700">Bayar</a>
                 @endif
                 <a href="{{ route('transactions.show', $transaction->id) }}" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-indigo-600 dark:hover:bg-indigo-700">Lihat</a>
             </div>

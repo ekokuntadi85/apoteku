@@ -64,15 +64,23 @@ class TransactionObserver
             $debitAccountCode = '103'; // Piutang Usaha
         }
 
+        // For loan type, use different description
+        $description = $transaction->invoice_type === 'loan' 
+            ? 'Pinjaman Barang #' . $transaction->invoice_number
+            : 'Penjualan #' . $transaction->invoice_number;
+        
+        // Use grand_total (after discount) instead of total_price
+        $amount = $transaction->grand_total;
+
         JournalService::createEntry(
             $transaction->created_at->format('Y-m-d'),
             'INV-' . $transaction->invoice_number,
-            'Penjualan #' . $transaction->invoice_number,
+            $description,
             [
-                ['account_code' => $debitAccountCode, 'amount' => $transaction->total_price]
+                ['account_code' => $debitAccountCode, 'amount' => $amount]
             ],
             [
-                ['account_code' => '401', 'amount' => $transaction->total_price]
+                ['account_code' => '401', 'amount' => $amount]
             ]
         );
 
