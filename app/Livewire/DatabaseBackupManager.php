@@ -91,17 +91,39 @@ class DatabaseBackupManager extends Component
             }
 
             // Upload to Dropbox if enabled
+            $dropboxSuccess = false;
             if ($this->dropboxEnabled && !empty($this->dropboxAccessToken)) {
-                $this->uploadProgress = 'Mengupload ke Dropbox...';
-                $this->uploadToDropbox($filePath, $fileName);
-                $this->uploadProgress = 'Backup berhasil diupload ke Dropbox!';
+                try {
+                    $this->uploadProgress = 'Mengupload ke Dropbox...';
+                    $this->uploadToDropbox($filePath, $fileName);
+                    $this->uploadProgress = 'Backup berhasil diupload ke Dropbox!';
+                    $dropboxSuccess = true;
+                } catch (\Exception $e) {
+                    // Log error but don't fail the entire backup
+                    \Log::warning('Dropbox upload failed, but local backup succeeded', [
+                        'error' => $e->getMessage(),
+                        'file' => $fileName,
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // Set warning message for user
+                    $this->uploadProgress = '⚠️ Dropbox upload gagal: ' . $this->getSimplifiedErrorMessage($e);
+                    
+                    // Don't throw - allow backup to succeed locally
+                }
             }
 
             // Cleanup old local backups (> 10 days)
             $this->cleanupOldBackups();
 
-            // Set success message
-            $this->successMessage = 'Backup berhasil dibuat' . ($this->dropboxEnabled ? ' dan diupload ke Dropbox' : '') . '.';
+            // Set success message with Dropbox status
+            if ($dropboxSuccess) {
+                $this->successMessage = '✅ Backup berhasil dibuat dan diupload ke Dropbox.';
+            } else if ($this->dropboxEnabled && !empty($this->dropboxAccessToken)) {
+                $this->successMessage = '✅ Backup berhasil dibuat (lokal). ⚠️ Upload Dropbox gagal - cek koneksi internet.';
+            } else {
+                $this->successMessage = '✅ Backup berhasil dibuat (lokal).';
+            }
             $this->errorMessage = '';
             
             // Auto-hide after 3 seconds
@@ -358,6 +380,43 @@ class DatabaseBackupManager extends Component
         } catch (\Exception $e) {
             \Log::error('Auto-cleanup failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get simplified error message for user display
+     */
+    protected function getSimplifiedErrorMessage(\Exception $e): string
+    {
+        $message = $e->getMessage();
+        
+        // Extract meaningful error from cURL errors
+        if (str_contains($message, 'cURL error')) {
+            if (str_contains($message, 'Could not connect to server')) {
+                return 'Tidak dapat terhubung ke server Dropbox. Cek koneksi internet.';
+            }
+            if (str_contains($message, 'Connection timed out')) {
+                return 'Koneksi timeout. Cek koneksi internet atau firewall.';
+            }
+            if (str_contains($message, 'SSL')) {
+                return 'SSL error. Cek sertifikat SSL server.';
+            }
+        }
+        
+        // Extract meaningful error from HTTP errors
+        if (str_contains($message, 'HTTP')) {
+            if (str_contains($message, '401') || str_contains($message, 'Unauthorized')) {
+                return 'Kredensial Dropbox tidak valid. Cek DROPBOX_ACCESS_TOKEN.';
+            }
+            if (str_contains($message, '429')) {
+                return 'Rate limit exceeded. Coba lagi nanti.';
+            }
+            if (str_contains($message, '500') || str_contains($message, '503')) {
+                return 'Server Dropbox error. Coba lagi nanti.';
+            }
+        }
+        
+        // Return first 100 characters of original message if no pattern matched
+        return substr($message, 0, 100);
     }
 
     public function render()
