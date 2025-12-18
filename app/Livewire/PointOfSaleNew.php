@@ -200,24 +200,34 @@ class PointOfSaleNew extends Component
 
     public function updateQuantity($index, $quantity)
     {
-        $quantity = (int) $quantity;
+        $quantity = (float) $quantity; // Support float/decimals if needed, or int
         if ($quantity <= 0) {
             $this->removeItem($index);
             return;
         }
 
+        if (!isset($this->cart_items[$index])) return;
+
         $item = $this->cart_items[$index];
         $product = Product::find($item['product_id']);
-        $selectedUnit = ProductUnit::find($item['product_unit_id']);
+        
+        // Find conversion factor
+        $conversionFactor = 1;
+        if(isset($item['conversion_factor'])) {
+             $conversionFactor = $item['conversion_factor'];
+        }
 
-        if (!$product || !$selectedUnit) return;
+        if (!$product) return;
 
-        $newQuantityBase = $quantity * $selectedUnit->conversion_factor;
+        $newQuantityBase = $quantity * $conversionFactor;
         $totalStockInBaseUnits = $product->productBatches->sum('stock');
 
         if ($totalStockInBaseUnits < $newQuantityBase) {
             session()->flash('error', 'Stok tidak cukup untuk ' . $product->name);
-            return;
+            // Reset to max available or keep old? 
+            // For now, let's just warn and not update, or clamp?
+            // Let's just return to prevent invalid state
+             return;
         }
 
         $this->cart_items[$index]['original_quantity_input'] = $quantity;
@@ -226,8 +236,18 @@ class PointOfSaleNew extends Component
         $this->calculateTotalPrice();
     }
 
+    public function updateItemQuantity($index, $value)
+    {
+        // Wrapper for direct input binding
+        if ($value === '' || $value === null) return;
+        $this->updateQuantity($index, $value);
+    }
+
     public function checkStock($index)
     {
+        // Kept for backward compatibility or specific checks, but updateQuantity handles core logic
+        if (!isset($this->cart_items[$index])) return;
+        
         $item = $this->cart_items[$index];
         $product = Product::find($item['product_id']);
         $totalStockInBaseUnits = $product->productBatches->sum('stock');
@@ -235,6 +255,39 @@ class PointOfSaleNew extends Component
         if ($totalStockInBaseUnits < $item['quantity']) {
             session()->flash('error', 'Stok untuk ' . $item['product_name'] . ' tidak lagi mencukupi.');
         }
+    }
+
+    public function getSmartCashOptionsProperty()
+    {
+        $total = $this->total_price;
+        if ($total <= 0) return [];
+
+        $options = [];
+        // Exact
+        $options[] = $total;
+
+        // Next logical amounts
+        // e.g. 15.000 -> 20.000, 50.000, 100.000
+        $denominations = [5000, 10000, 20000, 50000, 100000];
+        
+        foreach ($denominations as $denom) {
+            if ($denom > $total) {
+                $options[] = $denom;
+            }
+        }
+        
+        // Also consider "Total rounded up to nearest 10k or 50k" if not covered
+        // e.g. 67.000 -> 70.000
+        $ceil10k = ceil($total / 10000) * 10000;
+        if ($ceil10k > $total && !in_array($ceil10k, $options)) {
+             $options[] = $ceil10k;
+        }
+
+        // Sort and specific limits
+        $options = array_unique($options);
+        sort($options);
+        
+        return array_slice($options, 0, 4); // Return top 4 suggestions
     }
 
     private function calculateTotalPrice()
@@ -288,15 +341,18 @@ class PointOfSaleNew extends Component
                 $this->invoiceNumber = 'POS-' . Carbon::now()->format('YmdHis');
 
                 $transaction = Transaction::create([
-                    'type' => 'POS',
-                    'payment_status' => 'paid',
-                    'total_price' => $this->total_price,
-                    'amount_paid' => $this->amount_paid,
-                    'change' => $this->change,
-                    'customer_id' => $this->customer_id,
-                    'user_id' => Auth::id(),
-                    'invoice_number' => $this->invoiceNumber,
-                ]);
+                'type' => 'pos',
+                'payment_status' => 'paid',
+                'total_price' => $this->total_price,
+                'grand_total' => $this->total_price, // Added to fix SQL error
+                'amount_paid' => $this->amount_paid,
+                'change' => $this->change,
+                'customer_id' => $this->customer_id,
+                'user_id' => Auth::id(),
+                'invoice_number' => $this->invoiceNumber,
+                'invoice_type' => 'normal',
+                'paid_at' => Carbon::now(),
+            ]);
 
                 foreach ($this->cart_items as $item) {
                     $detail = TransactionDetail::create([
