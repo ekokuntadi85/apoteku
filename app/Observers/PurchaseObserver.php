@@ -11,6 +11,13 @@ class PurchaseObserver
     
     public function created(Purchase $purchase)
     {
+        // Skip journal entries for opening balance purchases (Saldo Awal)
+        // Journal is created manually in YearEndClosingService
+        if (str_starts_with($purchase->invoice_number, 'SA-')) {
+            \Log::info("Skipping observer journal for opening balance: {$purchase->invoice_number} (handled by YearEndClosingService)");
+            return;
+        }
+        
         // 1. Record Inventory Increase
         // Debit: Inventory (104)
         // Credit: Accounts Payable (201)

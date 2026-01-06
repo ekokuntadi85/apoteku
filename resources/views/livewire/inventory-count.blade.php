@@ -20,6 +20,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tanggal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Catatan</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Petugas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Aksi</th>
                             </tr>
                         </thead>
@@ -29,16 +30,25 @@
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $opname->opname_date }}</td>
                                     <td class="px-6 py-4">{{ $opname->notes }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $opname->user->name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($opname->status === 'finalized')
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">FINALIZED</span>
+                                        @else
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">DRAFT</span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        <button type="button" wire:click="changeView('detail', {{ $opname->id }})" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-gray-800 active:bg-gray-50 transition ease-in-out duration-150 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500">Lihat</button>
+                                        <a href="{{ route('stock-opname.detail', $opname->id) }}" class="inline-flex items-center px-3 py-1.5 border border-blue-500 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 focus:outline-none transition">Lihat Detail</a>
                                         @can('delete-purchase')
-                                        <button type="button" wire:click="deleteOpname({{ $opname->id }})" wire:confirm="Apakah Anda yakin ingin menghapus opname ini? Stok akan dikembalikan ke keadaan semula." class="ml-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:border-red-700 focus:shadow-outline-red active:bg-red-700 transition ease-in-out duration-150">Hapus</button>
+                                        @if($opname->status === 'draft')
+                                        <button type="button" wire:click="deleteOpname({{ $opname->id }})" wire:confirm="Apakah Anda yakin ingin menghapus opname ini? Stok akan dikembalikan ke keadaan semula." class="ml-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-500 focus:outline-none transition">Hapus</button>
+                                        @endif
                                         @endcan
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-4">Tidak ada riwayat opname.</td>
+                                    <td colspan="5" class="text-center py-4">Tidak ada riwayat opname.</td>
                                 </tr>
                             @endforelse
                         </tbody>

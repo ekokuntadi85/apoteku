@@ -135,12 +135,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('database-restore', DatabaseRestoreManager::class)->name('database.restore');
         Route::get('stock-consistency-check', \App\Livewire\StockConsistencyCheck::class)->name('stock-consistency.index');
         Route::get('artisan-commands', \App\Livewire\ArtisanCommandManager::class)->name('artisan.commands');
+        Route::get('year-end-closing', \App\Livewire\YearEndClosingManager::class)->name('year-end-closing.index');
     });
     
     // Stock Opname Module
     Route::middleware(['can:access-products'])->group(function () {
         Route::get('/stock-card', StockCard::class)->name('stock-card.index');
         Route::get('/stock-opname', InventoryCount::class)->name('stock-opname.index');
+        Route::get('/stock-opname/{opname}', \App\Livewire\StockOpnameDetail::class)->name('stock-opname.detail');
         Route::post('/stock-opnames', [\App\Http\Controllers\StockOpnameController::class, 'store']);
         Route::post('/stock-opnames/{stockOpname}/apply', [\App\Http\Controllers\StockOpnameController::class, 'apply'])->name('stock-opnames.apply');
     });
