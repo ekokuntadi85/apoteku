@@ -39,10 +39,12 @@ class PurchaseEdit extends Component
     public $selectedProductUnits = []; // New property for available units for selected product
     public $selectedProductUnitId; // New property for the currently selected unit ID
     public $selectedProductUnitPurchasePrice; // New property to display purchase price of selected unit
+    public $selectedUnitConversionFactor = 1; // Properti baru untuk faktor konversi satuan terpilih
 
     public $purchase_items = [];
     public $showPriceWarningModal = false;
     public $newSellingPrice;
+    public $newMemberPrice;
     public $itemToAddCache = null;
 
     protected function rules()
@@ -139,6 +141,10 @@ class PurchaseEdit extends Component
                 'original_stock_input' => $batch->stock / ($conversionFactor ?: 1), // Recalculate original input stock, prevent division by zero
                 'expiration_date' => $batch->expiration_date,
                 'subtotal' => ($batch->purchase_price * $conversionFactor) * ($batch->stock / ($conversionFactor ?: 1)), // Subtotal based on displayed unit price and stock
+                'last_purchase_price_base' => \App\Models\ProductBatch::where('product_id', $batch->product_id)
+                                                ->where('created_at', '<', $batch->created_at)
+                                                ->latest('created_at')
+                                                ->value('purchase_price'),
             ];
         }
     }
@@ -177,11 +183,12 @@ class PurchaseEdit extends Component
             $this->selectedProductUnits = $product->productUnits->toArray();
 
             // Automatically select the base unit
-            $baseUnit = $product->productUnits->firstWhere('is_base_unit', true);
+            $baseUnit = $product->productUnits->where('is_base_unit', true)->first();
             if ($baseUnit) {
-                $this->selectedProductUnitId = $baseUnit['id'];
-                $this->purchase_price = $baseUnit['purchase_price']; // Set initial purchase price to base unit's
-                $this->selectedProductUnitPurchasePrice = $baseUnit['purchase_price'];
+                $this->selectedProductUnitId = (string) $baseUnit->id;
+                $this->purchase_price = $baseUnit->purchase_price; // Set initial purchase price to base unit's
+                $this->selectedProductUnitPurchasePrice = $baseUnit->purchase_price;
+                $this->selectedUnitConversionFactor = $baseUnit->conversion_factor ?: 1;
             } else {
                 $this->selectedProductUnitId = null;
                 $this->purchase_price = '';
@@ -217,6 +224,7 @@ class PurchaseEdit extends Component
         if ($selectedUnit) {
             $this->purchase_price = $selectedUnit['purchase_price'];
             $this->selectedProductUnitPurchasePrice = $selectedUnit['purchase_price'];
+            $this->selectedUnitConversionFactor = $selectedUnit['conversion_factor'] ?: 1;
 
             // If there's a last known base unit purchase price, convert it to the new selected unit's price
             if ($this->lastKnownPurchasePrice !== null) {
@@ -247,36 +255,47 @@ class PurchaseEdit extends Component
         // Calculate the purchase price in base units for comparison
         $purchasePriceInBaseUnit = $this->purchase_price / $selectedUnit['conversion_factor'];
 
-        // Price warning logic: compare selected unit's purchase price (converted to base) with base unit's selling price
-        if ($purchasePriceInBaseUnit > $baseSellingPrice) {
+        // Check if purchase price is DIFFERENT from last known purchase price OR if selling/member prices are too low
+        $isPriceChanged = $this->lastKnownPurchasePrice !== null && round($purchasePriceInBaseUnit) != round($this->lastKnownPurchasePrice);
+        $isSellingPriceTooLow = $this->selling_price < $this->purchase_price;
+        $isMemberPriceTooLow = (float)($selectedUnit['member_price'] ?? 0) < $this->purchase_price;
+
+        if ($isPriceChanged || $isSellingPriceTooLow || $isMemberPriceTooLow) {
             $expirationDate = $this->expiration_date ?: \Carbon\Carbon::now()->addMonths(6)->format('Y-m-d');
+
+            $priceChangeType = 'none';
+            if ($isPriceChanged) {
+                $priceChangeType = $purchasePriceInBaseUnit > $this->lastKnownPurchasePrice ? 'increase' : 'decrease';
+            }
 
             $this->itemToAddCache = [
                 'product_id' => $this->product_id,
                 'product_name' => $product->name,
-                'product_unit_id' => $this->selectedProductUnitId, // Store selected unit ID
-                'unit_name' => $selectedUnit['name'], // Store selected unit name for display
-                'conversion_factor' => $selectedUnit['conversion_factor'], // Store conversion factor
+                'product_unit_id' => $this->selectedProductUnitId,
+                'unit_name' => $selectedUnit['name'],
+                'conversion_factor' => $selectedUnit['conversion_factor'],
                 'batch_number' => $this->batch_number,
-                'purchase_price' => $this->purchase_price, // Price per selected unit
-                'stock' => $stockInBaseUnits, // Stock in base units
-                'original_stock_input' => $this->stock, // Store original input for display
+                'purchase_price' => $this->purchase_price,
+                'stock' => $stockInBaseUnits,
+                'original_stock_input' => $this->stock,
                 'expiration_date' => $expirationDate,
-                'subtotal' => $this->purchase_price * $this->stock, // Subtotal based on selected unit price and input stock
+                'subtotal' => $this->purchase_price * $this->stock,
+                'current_selling_price' => $this->selling_price,
+                'current_member_price' => $selectedUnit['member_price'] ?? 0,
+                'price_change_type' => $priceChangeType,
+                'last_purchase_price' => $this->lastKnownPurchasePrice,
+                'is_low_selling_price' => $isSellingPriceTooLow || $isMemberPriceTooLow,
             ];
 
-            $this->newSellingPrice = $baseSellingPrice; // Suggest updating base unit selling price
+            // Suggest new prices - must be at least the new purchase price
+            $suggestedSellingPrice = max($this->selling_price, $this->purchase_price);
+            $suggestedMemberPrice = max((float)($selectedUnit['member_price'] ?? 0), $this->purchase_price);
+
+            $this->newSellingPrice = $suggestedSellingPrice;
+            $this->newMemberPrice = $suggestedMemberPrice;
+            
             $this->showPriceWarningModal = true;
             return;
-        }
-
-        // Logika konfirmasi harga lebih rendah (compare base unit purchase price)
-        // Convert current purchase price to base unit equivalent for comparison
-        $currentBasePurchasePrice = $this->purchase_price / $selectedUnit['conversion_factor'];
-
-        if ($this->lastKnownPurchasePrice !== null && $currentBasePurchasePrice < $this->lastKnownPurchasePrice) {
-            $this->dispatch('confirm-lower-price', 'Harga beli per satuan dasar yang diinputkan (' . number_format($currentBasePurchasePrice, 0) . ') lebih rendah dari harga beli terakhir per satuan dasar (' . number_format($this->lastKnownPurchasePrice, 0) . '). Lanjutkan?');
-            return; // Hentikan eksekusi sampai ada konfirmasi dari frontend
         }
 
         $this->confirmedAddItem();
@@ -309,6 +328,7 @@ class PurchaseEdit extends Component
             'conversion_factor' => $selectedUnit['conversion_factor'], // Store conversion factor
             'batch_number' => $this->batch_number,
             'purchase_price' => $this->purchase_price, // Price per selected unit
+            'last_purchase_price_base' => $this->lastKnownPurchasePrice, // Price ref for indicator
             'stock' => $stockInBaseUnits, // Stock in base units
             'original_stock_input' => $this->stock, // Store original input for display
             'expiration_date' => $this->expiration_date,
@@ -317,20 +337,26 @@ class PurchaseEdit extends Component
 
         $this->calculateTotalPurchasePrice();
         $this->resetItemForm();
+        $this->dispatch('focus-search');
     }
 
     public function updatePriceAndAddItem()
     {
         // Calculate the minimum selling price in base unit
-        $minSellingPrice = $this->itemToAddCache['purchase_price'] / $this->itemToAddCache['conversion_factor'];
+        $purchasePriceInBaseUnit = $this->itemToAddCache['purchase_price'] / $this->itemToAddCache['conversion_factor'];
 
         $this->validate([
-            'newSellingPrice' => 'required|numeric|min:' . $minSellingPrice
+            'newSellingPrice' => 'required|numeric|min:' . $purchasePriceInBaseUnit,
+            'newMemberPrice' => 'required|numeric|min:' . $purchasePriceInBaseUnit,
+        ], [
+            'newSellingPrice.min' => 'Harga jual umum tidak boleh lebih rendah dari harga beli (Rp ' . number_format($purchasePriceInBaseUnit, 0) . ').',
+            'newMemberPrice.min' => 'Harga member tidak boleh lebih rendah dari harga beli (Rp ' . number_format($purchasePriceInBaseUnit, 0) . ').',
         ]);
 
         $product = Product::find($this->itemToAddCache['product_id']);
         if ($product && $product->baseUnit) {
             $product->baseUnit->selling_price = $this->newSellingPrice;
+            $product->baseUnit->member_price = $this->newMemberPrice;
             $product->baseUnit->save();
         }
 
@@ -339,6 +365,7 @@ class PurchaseEdit extends Component
 
         $this->closePriceWarningModal();
         $this->resetItemForm();
+        $this->dispatch('focus-search');
     }
 
     public function closePriceWarningModal()
@@ -346,6 +373,8 @@ class PurchaseEdit extends Component
         $this->showPriceWarningModal = false;
         $this->itemToAddCache = null;
         $this->newSellingPrice = null;
+        $this->newMemberPrice = null;
+        $this->dispatch('focus-search');
     }
 
     public function removeItem($index)

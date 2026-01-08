@@ -60,7 +60,7 @@
                     @endif
                     @error('product_id') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
-                <div>
+                <div wire:key="unit-select-{{ $product_id }}">
                     <label for="selectedProductUnitId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Satuan Pembelian</label>
                     <select id="selectedProductUnitId" wire:model.live="selectedProductUnitId" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                         <option value="">Pilih Satuan</option>
@@ -77,7 +77,20 @@
                 </div>
                 <div>
                     <label for="purchase_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Beli per Satuan</label>
-                    <input type="number" step="0.01" id="purchase_price" wire:model="purchase_price" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" step="0.01" id="purchase_price" wire:model.live="purchase_price" 
+                        class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 {{ (float)$purchase_price > 0 && (float)$lastKnownPurchasePrice > 0 ? (((float)$purchase_price / ((float)($selectedUnitConversionFactor ?: 1))) > (float)$lastKnownPurchasePrice ? 'text-red-600 font-bold border-red-300' : (((float)$purchase_price / ((float)($selectedUnitConversionFactor ?: 1))) < (float)$lastKnownPurchasePrice ? 'text-green-600 font-bold border-green-300' : '')) : '' }}">
+                    
+                    @if((float)$purchase_price > 0 && (float)$lastKnownPurchasePrice > 0)
+                        @php
+                            $currentBasePrice = (float)$purchase_price / ((float)($selectedUnitConversionFactor ?: 1));
+                        @endphp
+                        @if($currentBasePrice > (float)$lastKnownPurchasePrice)
+                            <p class="text-xs text-red-600 mt-1 italic">harga beli lebih mahal</p>
+                        @elseif($currentBasePrice < (float)$lastKnownPurchasePrice)
+                            <p class="text-xs text-green-600 mt-1 italic">harga beli lebih murah</p>
+                        @endif
+                    @endif
+                    
                     @error('purchase_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
@@ -87,7 +100,7 @@
                 </div>
                 <div class="md:col-span-2">
                     <label for="expiration_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Kadaluarsa (Opsional)</label>
-                    <input type="date" id="expiration_date" wire:model="expiration_date" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
+                    <input type="date" id="expiration_date" wire:model="expiration_date" wire:keydown.enter="addItem" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600">
                     @error('expiration_date') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -97,44 +110,84 @@
         </div>
 
         <!-- Purchase Items List -->
-        <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg p-6">
-            <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Daftar Item</h3>
-            <div class="space-y-4">
-                @forelse($purchase_items as $index => $item)
-                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-2">
-                            <p class="font-bold text-gray-900 dark:text-white">{{ $item['product_name'] }}</p>
-                            <span class="text-sm text-gray-600 dark:text-gray-400">( {{ $item['batch_number'] ?: '-' }} )</span>
-                        </div>
-                        <div class="space-y-1 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Tanggal Expire:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">{{ $item['expiration_date'] ? \Carbon\Carbon::parse($item['expiration_date'])->format('d/m/Y') : '-' }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Harga Beli:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">Rp {{ number_format($item['purchase_price'], 0) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Stok:</span>
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">{{ $item['original_stock_input'] }} {{ $item['unit_name'] }}</span>
-                            </div>
-                            <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
-                                <span class="font-semibold text-gray-800 dark:text-gray-100">Subtotal:</span>
-                                <span class="font-bold text-gray-900 dark:text-white">Rp {{ number_format($item['subtotal'], 0) }}</span>
-                            </div>
-                        </div>
-                        <div class="text-right mt-2">
-                            <button type="button" wire:click="removeItem({{ $index }})" class="text-red-500 hover:text-red-700 text-sm font-medium">Hapus</button>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada item yang ditambahkan.</p>
-                @endforelse
+        <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg overflow-hidden mt-6">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Daftar Item Pembelian</h3>
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-bold rounded-full">
+                    {{ count($purchase_items) }} Item
+                </span>
             </div>
-            <div class="mt-6 pt-4 border-t-2 border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">Total</span>
-                <span class="text-xl font-bold text-gray-900 dark:text-white">Rp {{ number_format($total_purchase_price, 0) }}</span>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Produk / Satuan</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Batch / Exp</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jumlah</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Harga Beli</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Subtotal</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                        @forelse($purchase_items as $index => $item)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-600/50 transition-colors">
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $item['product_name'] }}</div>
+                                    <div class="text-[11px] text-gray-500 dark:text-gray-400">Unit: {{ $item['unit_name'] }}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="space-y-1">
+                                        <div class="text-[11px] font-medium text-gray-700 dark:text-gray-300">B: {{ $item['batch_number'] ?: '-' }}</div>
+                                        <div class="text-[11px] text-gray-500 dark:text-gray-400">E: {{ $item['expiration_date'] ? \Carbon\Carbon::parse($item['expiration_date'])->format('d/m/Y') : '-' }}</div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $item['original_stock_input'] }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    @php
+                                        $currentBasePriceInList = (float)($item['purchase_price'] ?? 0) / ((float)($item['conversion_factor'] ?: 1));
+                                        $lastBasePriceInList = (float)($item['last_purchase_price_base'] ?? 0);
+                                        $priceState = ($currentBasePriceInList > 0 && $lastBasePriceInList > 0) ? ($currentBasePriceInList > $lastBasePriceInList ? 'expensive' : ($currentBasePriceInList < $lastBasePriceInList ? 'cheaper' : 'normal')) : 'normal';
+                                    @endphp
+                                    <div class="relative inline-block w-full">
+                                        <div class="text-sm font-bold {{ $priceState === 'expensive' ? 'text-red-600' : ($priceState === 'cheaper' ? 'text-green-600' : 'text-gray-900 dark:text-white') }}">
+                                            Rp {{ number_format($item['purchase_price'], 0) }}
+                                        </div>
+                                        @if($priceState !== 'normal')
+                                            <div class="text-[9px] mt-0.5 {{ $priceState === 'expensive' ? 'text-red-500' : 'text-green-500' }} font-medium">Beli: {{ $priceState === 'expensive' ? '↑ Mahal' : '↓ Murah' }}</div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="text-sm font-bold text-gray-900 dark:text-white">Rp {{ number_format($item['subtotal'], 0) }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button type="button" wire:click="removeItem({{ $index }})" class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-4 py-12 text-center text-gray-500">
+                                    Belum ada item yang ditambahkan.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                    <tfoot class="bg-blue-50 dark:bg-blue-900/20">
+                        <tr>
+                            <td colspan="4" class="px-4 py-4 text-right text-lg font-bold text-gray-700 dark:text-gray-300">Total Pembelian</td>
+                            <td class="px-4 py-4 text-right text-xl font-black text-blue-600 dark:text-blue-400">Rp {{ number_format($total_purchase_price, 0) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
 
@@ -146,6 +199,73 @@
             </button>
         </div>
     </div>
+
+    <!-- Price Warning Modal -->
+    @if($showPriceWarningModal && $itemToAddCache)
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+            @php
+                $priceChangeType = $itemToAddCache['price_change_type'] ?? 'increase';
+                $lastPrice = $itemToAddCache['last_purchase_price'] ?? 0;
+                $conversionFactor = $itemToAddCache['conversion_factor'] ?? 1;
+                $lastPriceInUnit = (float)$lastPrice * (float)$conversionFactor;
+                $isLowSellingPriceOnly = $priceChangeType === 'none' && ($itemToAddCache['is_low_selling_price'] ?? false);
+            @endphp
+
+            @if($isLowSellingPriceOnly)
+                <h3 class="text-xl font-bold text-red-600 dark:text-red-400">
+                    Peringatan Harga Jual
+                </h3>
+            @else
+                <h3 class="text-xl font-bold {{ $priceChangeType === 'increase' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400' }}">
+                    {{ $priceChangeType === 'increase' ? 'Harga Beli Naik' : 'Harga Beli Turun' }}
+                </h3>
+            @endif
+            
+            <div class="mt-4 text-gray-700 dark:text-gray-300">
+                <p>Harga beli untuk produk <strong>{{ $itemToAddCache['product_name'] }}</strong>:</p>
+                <div class="mt-2 bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                    @if($priceChangeType !== 'none')
+                        <p class="text-sm">Harga beli terakhir: <strong>Rp {{ number_format($lastPriceInUnit, 0) }}</strong> per {{ $itemToAddCache['unit_name'] }}</p>
+                    @endif
+                    <p class="text-sm mt-1">Harga beli saat ini: <strong class="{{ $priceChangeType === 'increase' ? 'text-red-600' : ($priceChangeType === 'decrease' ? 'text-green-600' : 'text-gray-900 dark:text-white') }}">Rp {{ number_format($itemToAddCache['purchase_price'], 0) }}</strong> per {{ $itemToAddCache['unit_name'] }}</p>
+                </div>
+                
+                @if($isLowSellingPriceOnly)
+                    <p class="mt-3 text-sm text-red-600 font-medium italic">Harga jual atau harga member yang diinput lebih rendah dari harga beli. Silakan periksa kembali agar tidak rugi.</p>
+                @elseif($priceChangeType === 'increase')
+                    <p class="mt-3 text-sm italic">Harga beli naik. Anda mungkin perlu menaikkan harga jual untuk mempertahankan margin keuntungan.</p>
+                @elseif($priceChangeType === 'decrease')
+                    <p class="mt-3 text-sm italic">Harga beli turun. Anda bisa menurunkan harga jual untuk lebih kompetitif, atau mempertahankan harga jual untuk margin lebih tinggi.</p>
+                @endif
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <div>
+                    <label for="newSellingPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Update Harga Jual</label>
+                    <input type="number" id="newSellingPrice" wire:model="newSellingPrice" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600">
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Harga Saat Ini: Rp {{ number_format($itemToAddCache['current_selling_price'] ?? 0, 0) }}</p>
+                    <p class="text-[10px] text-red-500 mt-0.5">Minimal: Rp {{ number_format($itemToAddCache['purchase_price'], 0) }}</p>
+                </div>
+                <div>
+                    <label for="newMemberPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Update Harga Member</label>
+                    <input type="number" id="newMemberPrice" wire:model="newMemberPrice" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600">
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Harga Saat Ini: Rp {{ number_format($itemToAddCache['current_member_price'] ?? 0, 0) }}</p>
+                    <p class="text-[10px] text-red-500 mt-0.5">Minimal: Rp {{ number_format($itemToAddCache['purchase_price'], 0) }}</p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-4">
+                <button type="button" wire:click="closePriceWarningModal" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
+                    Batal
+                </button>
+                <button type="button" wire:click="updatePriceAndAddItem" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                    Update Harga & Lanjutkan
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 
 @push('scripts')
@@ -154,6 +274,14 @@
         Livewire.on('confirm-lower-price', (message) => {
             if (confirm(message)) {
                 Livewire.dispatch('confirmedAddItem');
+            }
+        });
+
+        Livewire.on('focus-search', () => {
+            const searchInput = document.getElementById('searchProduct');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
             }
         });
     });

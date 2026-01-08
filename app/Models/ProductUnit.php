@@ -19,6 +19,10 @@ class ProductUnit extends Model
         'purchase_price',
     ];
 
+    protected $casts = [
+        'is_base_unit' => 'boolean',
+    ];
+
     public function product()
     {
         return $this->belongsTo(Product::class);
