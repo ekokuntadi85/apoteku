@@ -33,6 +33,7 @@ class ProductEdit extends Component
                 'is_base_unit' => true,
                 'conversion_factor' => 1,
                 'selling_price' => 0,
+                'member_price' => null,
                 'purchase_price' => 0,
             ];
         }
@@ -67,6 +68,7 @@ class ProductEdit extends Component
             'productUnits.*.name' => 'required|string|max:255',
             'productUnits.*.conversion_factor' => 'required|numeric|min:0.01',
             'productUnits.*.selling_price' => 'required|numeric|min:0',
+            'productUnits.*.member_price' => 'nullable|numeric|min:0',
             'productUnits.*.purchase_price' => 'required|numeric|min:0',
         ];
     }
@@ -104,6 +106,7 @@ class ProductEdit extends Component
             'is_base_unit' => false,
             'conversion_factor' => 1,
             'selling_price' => 0,
+            'member_price' => null,
             'purchase_price' => $baseUnitPurchasePrice, // Default to base unit price
         ];
     }

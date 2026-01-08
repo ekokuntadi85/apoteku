@@ -39,7 +39,16 @@
                     @foreach($customers as $customer)
 					<tr class="cursor-pointer hover:bg-indigo-50/60 dark:hover:bg-zinc-800/70 transition-colors" onclick="window.location='{{ route('customers.show', $customer->id) }}'">
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $customer->id }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $customer->name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">
+                            <div class="flex items-center gap-2">
+                                {{ $customer->name }}
+                                @if($customer->is_member)
+                                    <span class="bg-gradient-to-r from-amber-400 to-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                        ⭐ MEMBER
+                                    </span>
+                                @endif
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $customer->phone }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $customer->address }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -59,7 +68,14 @@
 		<div class="bg-white/80 dark:bg-gray-700/70 shadow-md rounded-xl p-4 border border-gray-200/70 dark:border-gray-600/60 backdrop-blur">
             <div class="flex justify-between items-start">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $customer->name }}</h3>
+                    <div class="flex items-center gap-2 mb-1">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $customer->name }}</h3>
+                        @if($customer->is_member)
+                            <span class="bg-gradient-to-r from-amber-400 to-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                ⭐ MEMBER
+                            </span>
+                        @endif
+                    </div>
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ $customer->phone }}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ $customer->address }}</p>
                 </div>
@@ -98,6 +114,13 @@
                     <label for="address" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Alamat:</label>
                     <textarea class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" id="address" wire:model="address"></textarea>
                     @error('address') <span class="text-red-500 text-xs italic">{{ $message }}</span>@enderror
+                </div>
+                <div class="mb-6">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" wire:model="is_member" class="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                        <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Member (Mendapat harga khusus)</span>
+                    </label>
+                    @error('is_member') <span class="text-red-500 text-xs italic">{{ $message }}</span>@enderror
                 </div>
                 <div class="flex items-center justify-end space-x-2">
                     <button type="button" wire:click="closeModal()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline dark:bg-gray-600 dark:hover:bg-gray-700">Batal</button>

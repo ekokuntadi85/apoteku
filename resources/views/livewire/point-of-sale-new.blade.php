@@ -60,24 +60,95 @@
             <!-- Mobile Logo/Title override -->
             <h1 class="font-bold text-gray-800 dark:text-gray-200 md:hidden text-lg">POS</h1>
 
-            <div class="w-2/3 md:w-full max-w-xs relative group">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                     <svg class="w-5 h-5 text-gray-400 group-focus-within:text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+            <!-- Customer Selector Container -->
+            <div class="flex items-center gap-2 w-2/3 md:w-full max-w-xs">
+                <!-- Searchable Customer Dropdown -->
+                <div class="flex-1 relative" 
+                     x-data="{ 
+                         open: false, 
+                         search: '',
+                         customers: @js($customers),
+                         get filteredCustomers() {
+                             if (!this.search) return this.customers;
+                             return this.customers.filter(c => 
+                                 c.name.toLowerCase().includes(this.search.toLowerCase()) ||
+                                 (c.phone && c.phone.includes(this.search))
+                             );
+                         },
+                         selectCustomer(id) {
+                             $wire.set('customer_id', id);
+                             this.open = false;
+                             this.search = '';
+                         }
+                     }"
+                     @click.away="open = false"
+                     @keydown.escape="open = false">
+                    
+                    <!-- Trigger Button -->
+                    <button type="button" @click="open = !open"
+                        class="w-full pl-10 pr-8 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent cursor-pointer font-medium sm:text-sm text-left flex items-center justify-between">
+                        <span class="truncate">{{ $selected_customer ? $selected_customer->name : 'Pilih Customer' }}</span>
+                        <svg class="w-4 h-4 text-gray-400 ml-2" :class="{'rotate-180': open}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Icon -->
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    
+                    <!-- Dropdown Panel -->
+                    <div x-show="open" 
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 max-h-80 overflow-hidden"
+                         style="display: none;">
+                        
+                        <!-- Search Input -->
+                        <div class="p-2 border-b border-gray-200 dark:border-gray-600">
+                            <input type="text" 
+                                   x-model="search"
+                                   x-ref="searchInput"
+                                   @click.stop
+                                   placeholder="Cari customer..."
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        
+                        <!-- Customer List -->
+                        <div class="max-h-60 overflow-y-auto">
+                            <template x-for="customer in filteredCustomers" :key="customer.id">
+                                <button type="button"
+                                        @click="selectCustomer(customer.id)"
+                                        class="w-full px-4 py-2 text-left hover:bg-emerald-50 dark:hover:bg-gray-600 flex items-center justify-between group"
+                                        :class="{'bg-emerald-100 dark:bg-gray-600': customer.id == $wire.customer_id}">
+                                    <span class="text-sm text-gray-900 dark:text-gray-100 truncate" x-text="customer.name"></span>
+                                    <span x-show="customer.is_member" class="bg-gradient-to-r from-amber-400 to-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ml-2">
+                                        ⭐ MEMBER
+                                    </span>
+                                </button>
+                            </template>
+                            <div x-show="filteredCustomers.length === 0" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                Tidak ada customer ditemukan
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <select wire:model="customer_id" 
-                    class="w-full pl-10 pr-8 py-2 appearance-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent cursor-pointer font-medium sm:text-sm">
-                    @foreach($this->customers as $customer)
-                        <option value="{{ $customer->id }}">{{ $customer->name }}</option>
-                    @endforeach
-                </select>
-                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                     <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </div>
+                
+                <!-- Member Badge (only show when customer is member) -->
+                @if($selected_customer && $selected_customer->is_member)
+                    <span class="bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm whitespace-nowrap">
+                        ⭐ MEMBER
+                    </span>
+                @endif
             </div>
+            
              <!-- Mobile Time -->
              <div class="md:hidden bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded text-emerald-700 dark:text-emerald-400 font-mono font-bold text-sm">
                    {{ \Carbon\Carbon::now()->format('H:i') }}
@@ -105,15 +176,6 @@
         <!-- Left Panel: Product Grid -->
         <main class="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
             
-            <!-- Mobile Customer Select (Visible only on small screens) -->
-            <div class="md:hidden mb-4">
-                 <select wire:model="customer_id" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 dark:border-gray-600">
-                    @foreach($this->customers as $customer)
-                        <option value="{{ $customer->id }}">{{ $customer->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
             <!-- Messages - Removed old static position, moved to Global Toast -->
 
             <!-- Grid -->
@@ -206,8 +268,18 @@
                                         <span class="text-xs text-gray-500 px-1">{{ $item['unit_name'] }}</span>
                                      @endif
                                 </div>
-                                <div class="font-bold text-gray-900 dark:text-white">
-                                    {{ number_format($item['subtotal'], 0, ',', '.') }}
+                                <div class="text-right">
+                                    @if(isset($item['is_member_price']) && $item['is_member_price'])
+                                        <div class="text-[10px] text-gray-400 line-through">{{ number_format($item['regular_price'] * $item['original_quantity_input'], 0, ',', '.') }}</div>
+                                        <div class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-end gap-1">
+                                            <span class="text-[10px] bg-amber-100 text-amber-700 px-1 rounded">MEMBER</span>
+                                            <span>{{ number_format($item['subtotal'], 0, ',', '.') }}</span>
+                                        </div>
+                                    @else
+                                        <div class="font-bold text-gray-900 dark:text-white">
+                                            {{ number_format($item['subtotal'], 0, ',', '.') }}
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

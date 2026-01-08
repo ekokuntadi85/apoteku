@@ -110,13 +110,20 @@
                     <td class="text-right">{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
                 </tr>
                 <tr>
-                    <td>Kasir:</td>
-                    <td class="text-right">{{ $transaction->user->name ?? 'N/A' }}</td>
-                </tr>
-                <tr>
-                    <td>Pelanggan:</td>
-                    <td class="text-right">{{ $transaction->customer->name ?? 'UMUM' }}</td>
-                </tr>
+                <td>Kasir:</td>
+                <td class="text-right">{{ $transaction->user->name }}</td>
+            </tr>
+            @if($transaction->customer)
+            <tr>
+                <td>Pelanggan:</td>
+                <td class="text-right">{{ $transaction->customer->name }}</td>
+            </tr>
+            @if($transaction->customer->is_member)
+            <tr>
+                <td colspan="2" class="text-right" style="font-weight: bold;">⭐ MEMBER APOTEK</td>
+            </tr>
+            @endif
+            @endif
             </table>
         </div>
 

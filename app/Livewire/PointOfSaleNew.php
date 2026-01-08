@@ -36,6 +36,7 @@ class PointOfSaleNew extends Component
     public $invoiceNumber;
     public $isProcessing = false;
     public $print_receipt = false; // NEW: Print receipt preference
+    public $selected_customer; // Track selected customer for member pricing
 
     protected $rules = [
         'customer_id' => 'nullable|exists:customers,id',
@@ -52,6 +53,7 @@ class PointOfSaleNew extends Component
     {
         $umumCustomer = Customer::firstOrCreate(['name' => 'UMUM'], ['phone' => null, 'address' => null]);
         $this->customer_id = $umumCustomer->id;
+        $this->selected_customer = $umumCustomer;
         $this->updateDateTimeAndUser();
         $this->dispatch('focus-search-input');
     }
@@ -85,6 +87,28 @@ class PointOfSaleNew extends Component
             }
         }
         return !$hasError;
+    }
+
+    /**
+     * Get the appropriate price for a product unit based on customer membership
+     */
+    private function getMemberPrice($productUnit, $customerId = null)
+    {
+        $customerId = $customerId ?? $this->customer_id;
+        
+        if (!$customerId) {
+            return $productUnit->selling_price;
+        }
+        
+        $customer = Customer::find($customerId);
+        
+        // If customer is a member and product has member price, use it
+        if ($customer && $customer->is_member && $productUnit->member_price !== null) {
+            return $productUnit->member_price;
+        }
+        
+        // Otherwise use regular selling price
+        return $productUnit->selling_price;
     }
 
 
@@ -125,7 +149,10 @@ class PointOfSaleNew extends Component
             $this->cart_items[$foundIndex]['quantity'] += $quantityInBaseUnits;
             $this->cart_items[$foundIndex]['subtotal'] = $this->cart_items[$foundIndex]['original_quantity_input'] * $this->cart_items[$foundIndex]['price'];
         } else {
-            // Add new item
+            // Add new item with member pricing
+            $actualPrice = $this->getMemberPrice($defaultUnit);
+            $isMemberPrice = ($actualPrice != $defaultUnit->selling_price);
+            
             $this->cart_items[] = [
                 'product_id' => $product->id,
                 'product_name' => $product->name,
@@ -134,8 +161,10 @@ class PointOfSaleNew extends Component
                 'conversion_factor' => $defaultUnit->conversion_factor,
                 'original_quantity_input' => 1,
                 'quantity' => $quantityInBaseUnits,
-                'price' => $defaultUnit->selling_price,
-                'subtotal' => 1 * $defaultUnit->selling_price,
+                'price' => $actualPrice,
+                'regular_price' => $defaultUnit->selling_price,
+                'is_member_price' => $isMemberPrice,
+                'subtotal' => 1 * $actualPrice,
                 'available_units' => $product->productUnits->map(function($u) use ($totalStockInBaseUnits) {
                     $unitStock = intdiv($totalStockInBaseUnits, $u->conversion_factor);
                     return [
@@ -178,13 +207,19 @@ class PointOfSaleNew extends Component
             return;
         }
 
-        // Update item details
+        // Update item details with member pricing
+        $productUnit = ProductUnit::find($newUnit['id']);
+        $actualPrice = $this->getMemberPrice($productUnit);
+        $isMemberPrice = ($actualPrice != $productUnit->selling_price);
+        
         $this->cart_items[$index]['product_unit_id'] = $newUnit['id'];
         $this->cart_items[$index]['unit_name'] = $newUnit['name'];
         $this->cart_items[$index]['conversion_factor'] = $newUnit['conversion_factor'];
-        $this->cart_items[$index]['price'] = $newUnit['selling_price'];
+        $this->cart_items[$index]['price'] = $actualPrice;
+        $this->cart_items[$index]['regular_price'] = $productUnit->selling_price;
+        $this->cart_items[$index]['is_member_price'] = $isMemberPrice;
         $this->cart_items[$index]['quantity'] = $quantityInBaseUnits;
-        $this->cart_items[$index]['subtotal'] = $item['original_quantity_input'] * $newUnit['selling_price'];
+        $this->cart_items[$index]['subtotal'] = $item['original_quantity_input'] * $actualPrice;
 
         $this->calculateTotalPrice();
     }
@@ -399,12 +434,37 @@ class PointOfSaleNew extends Component
         $this->updateDateTimeAndUser();
         $umumCustomer = Customer::firstOrCreate(['name' => 'UMUM']);
         $this->customer_id = $umumCustomer->id;
+        $this->selected_customer = $umumCustomer;
         $this->resetErrorBag();
     }
 
-    public function getCustomersProperty()
+    /**
+     * Handle customer change - refresh cart prices based on new customer's membership status
+     */
+    public function updatedCustomerId($value)
     {
-        return Customer::where('name', 'like', '%'.$this->customer_search.'%')->get();
+        $this->selected_customer = Customer::find($value);
+        
+        // Refresh all cart item prices based on new customer
+        foreach ($this->cart_items as $index => $item) {
+            $productUnit = ProductUnit::find($item['product_unit_id']);
+            if ($productUnit) {
+                $actualPrice = $this->getMemberPrice($productUnit);
+                $isMemberPrice = ($actualPrice != $productUnit->selling_price);
+                
+                $this->cart_items[$index]['price'] = $actualPrice;
+                $this->cart_items[$index]['regular_price'] = $productUnit->selling_price;
+                $this->cart_items[$index]['is_member_price'] = $isMemberPrice;
+                $this->cart_items[$index]['subtotal'] = $item['original_quantity_input'] * $actualPrice;
+            }
+        }
+        
+        $this->calculateTotalPrice();
+    }
+
+    public function updatedCustomerSearch()
+    {
+        // This will trigger re-render with filtered customers
     }
 
     public function render()
@@ -418,9 +478,17 @@ class PointOfSaleNew extends Component
 
         $products = $products->with(['productUnits', 'productBatches'])->paginate(10);
 
+        // Get customers with search filter
+        $customers = Customer::query()
+            ->when($this->customer_search, function($query) {
+                $query->where('name', 'like', '%' . $this->customer_search . '%')
+                      ->orWhere('phone', 'like', '%' . $this->customer_search . '%');
+            })
+            ->get();
+
         return view('livewire.point-of-sale-new', [
             'products' => $products,
-            'customers' => $this->customers,
+            'customers' => $customers,
         ]);
     }
 }

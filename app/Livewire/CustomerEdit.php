@@ -15,6 +15,7 @@ class CustomerEdit extends Component
     public $name;
     public $phone;
     public $address;
+    public $is_member = false;
 
     public function mount(Customer $customer)
     {
@@ -22,6 +23,7 @@ class CustomerEdit extends Component
         $this->name = $customer->name;
         $this->phone = $customer->phone;
         $this->address = $customer->address;
+        $this->is_member = $customer->is_member;
     }
 
     protected function rules()
@@ -35,6 +37,7 @@ class CustomerEdit extends Component
                 Rule::unique('customers', 'phone')->ignore($this->customerId),
             ],
             'address' => 'nullable|string|max:255',
+            'is_member' => 'boolean',
         ];
     }
 
@@ -52,6 +55,7 @@ class CustomerEdit extends Component
             'name' => $this->name,
             'phone' => $this->phone,
             'address' => $this->address,
+            'is_member' => $this->is_member,
         ]);
 
         session()->flash('message', 'Customer berhasil diperbarui.');

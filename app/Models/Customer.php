@@ -13,6 +13,11 @@ class Customer extends Model
         'name',
         'phone',
         'address',
+        'is_member',
+    ];
+
+    protected $casts = [
+        'is_member' => 'boolean',
     ];
 
     public function transactions()

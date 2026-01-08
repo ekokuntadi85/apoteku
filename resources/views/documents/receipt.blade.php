@@ -64,6 +64,17 @@
                 <td>Kasir:</td>
                 <td class="text-right">{{ $transaction->user->name }}</td>
             </tr>
+            @if($transaction->customer)
+            <tr>
+                <td>Pelanggan:</td>
+                <td class="text-right">{{ $transaction->customer->name }}</td>
+            </tr>
+            @if($transaction->customer->is_member)
+            <tr>
+                <td colspan="2" class="text-right" style="font-weight: bold;">⭐ MEMBER APOTEK</td>
+            </tr>
+            @endif
+            @endif
         </table>
 
         <div class="line"></div>

@@ -56,6 +56,22 @@
                                 </div>
 
                                 <div>
+                                    <label for="productUnits.{{ $index }}.member_price" class="block text-sm font-medium text-amber-700 dark:text-amber-400">
+                                        <span class="flex items-center gap-1">
+                                            ⭐ Harga Member <span class="text-xs text-gray-500">(Opsional)</span>
+                                        </span>
+                                    </label>
+                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-amber-500 sm:text-sm">Rp</span>
+                                        </div>
+                                        <input type="number" step="1" id="productUnits.{{ $index }}.member_price" wire:model="productUnits.{{ $index }}.member_price" placeholder="Kosongkan jika sama" class="pl-10 block w-full shadow-sm sm:text-sm border-amber-300 dark:border-amber-600 rounded-md dark:bg-gray-800 dark:text-gray-200 focus:ring-amber-500 focus:border-amber-500">
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Harga khusus untuk member. Kosongkan jika tidak ada diskon.</p>
+                                    @error('productUnits.' . $index . '.member_price') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div>
                                     <label for="productUnits.{{ $index }}.purchase_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Beli</label>
                                     <div class="mt-1 relative rounded-md shadow-sm">
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

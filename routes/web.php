@@ -74,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['can:access-products'])->group(function () {
         Route::get('/products', ProductManager::class)->name('products.index');
         Route::get('/products/create', ProductCreate::class)->name('products.create');
+        Route::get('/products/print-list', [App\Http\Controllers\DocumentController::class, 'printProductList'])->name('products.print-list');
         Route::get('/products/{product}', ProductShow::class)->name('products.show');
         Route::get('/products/{product}/edit', ProductEdit::class)->name('products.edit');
     });

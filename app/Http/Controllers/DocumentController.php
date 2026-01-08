@@ -181,4 +181,13 @@ class DocumentController extends Controller
 
         return $pdf->setPaper('a4', 'portrait')->stream('laporan-produk-terlaris.pdf');
     }
+
+    public function printProductList()
+    {
+        $products = Product::with(['category', 'productUnits', 'productBatches'])
+            ->orderBy('name')
+            ->get();
+        
+        return view('documents.product-list', compact('products'));
+    }
 }

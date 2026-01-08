@@ -17,6 +17,7 @@ class CustomerManager extends Component
     public $name;
     public $phone;
     public $address;
+    public $is_member = false;
     public $customerId;
     public $isUpdateMode = false;
     public $showModal = false; // New property for modal visibility
@@ -33,6 +34,7 @@ class CustomerManager extends Component
             ],
             'phone' => 'nullable|string|max:255',
             'address' => 'nullable|string',
+            'is_member' => 'boolean',
         ];
     }
 
@@ -64,6 +66,7 @@ class CustomerManager extends Component
                 'name' => $this->name,
                 'phone' => $this->phone,
                 'address' => $this->address,
+                'is_member' => $this->is_member,
             ]);
             session()->flash('message', 'Pelanggan berhasil diperbarui.');
         } else {
@@ -71,6 +74,7 @@ class CustomerManager extends Component
                 'name' => $this->name,
                 'phone' => $this->phone,
                 'address' => $this->address,
+                'is_member' => $this->is_member,
             ]);
             session()->flash('message', 'Pelanggan berhasil ditambahkan.');
         }
@@ -91,6 +95,7 @@ class CustomerManager extends Component
         $this->name = $customer->name;
         $this->phone = $customer->phone;
         $this->address = $customer->address;
+        $this->is_member = $customer->is_member;
         $this->isUpdateMode = true;
         $this->showModal = true; // Open modal for edit
     }
@@ -114,6 +119,7 @@ class CustomerManager extends Component
         $this->name = '';
         $this->phone = '';
         $this->address = '';
+        $this->is_member = false;
         $this->customerId = null;
         $this->isUpdateMode = false;
         $this->resetErrorBag(); // Clear validation errors

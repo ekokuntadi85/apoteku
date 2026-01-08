@@ -15,6 +15,7 @@ class ProductUnit extends Model
         'is_base_unit',
         'conversion_factor',
         'selling_price',
+        'member_price',
         'purchase_price',
     ];
 

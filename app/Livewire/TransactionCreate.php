@@ -31,6 +31,7 @@ class TransactionCreate extends Component
     public $quantity;
     public $price;
     public $transaction_items = [];
+    public $selected_customer; // Track selected customer for member pricing
 
     protected $rules = [
         'type' => 'required|in:pos,invoice',
@@ -78,6 +79,7 @@ class TransactionCreate extends Component
             ['phone' => null, 'address' => null]
         );
         $this->customer_id = $umumCustomer->id;
+        $this->selected_customer = $umumCustomer;
     }
 
     public function render()
@@ -99,15 +101,64 @@ class TransactionCreate extends Component
                                     ->get();
     }
 
+    /**
+     * Get the appropriate price for a product unit based on customer membership
+     */
+    private function getMemberPrice($productUnit, $customerId = null)
+    {
+        $customerId = $customerId ?? $this->customer_id;
+        
+        if (!$customerId) {
+            return $productUnit->selling_price;
+        }
+        
+        $customer = Customer::find($customerId);
+        
+        // If customer is a member and product has member price, use it
+        if ($customer && $customer->is_member && $productUnit->member_price !== null) {
+            return $productUnit->member_price;
+        }
+        
+        // Otherwise use regular selling price
+        return $productUnit->selling_price;
+    }
+
     public function selectProduct($productId)
     {
-        $product = Product::find($productId);
+        $product = Product::with('productUnits')->find($productId);
         if ($product) {
             $this->product_id = $product->id;
             $this->selectedProductName = $product->name;
-            $this->price = $product->selling_price; // Auto-fill price
+            
+            // Get the first/base product unit and apply member pricing
+            $productUnit = $product->productUnits->first();
+            if ($productUnit) {
+                $this->price = $this->getMemberPrice($productUnit);
+            } else {
+                $this->price = 0;
+            }
+            
             $this->searchProduct = ''; // Clear search input
             $this->searchResults = []; // Clear search results
+        }
+    }
+
+    /**
+     * Handle customer change - refresh transaction item prices
+     */
+    public function updatedCustomerId($value)
+    {
+        $this->selected_customer = Customer::find($value);
+        
+        // If there's a selected product, refresh its price
+        if ($this->product_id) {
+            $product = Product::with('productUnits')->find($this->product_id);
+            if ($product) {
+                $productUnit = $product->productUnits->first();
+                if ($productUnit) {
+                    $this->price = $this->getMemberPrice($productUnit);
+                }
+            }
         }
     }
 

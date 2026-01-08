@@ -57,6 +57,12 @@
                                 <p class="text-gray-600 dark:text-gray-300">Faktor Konversi: <span class="text-gray-900 dark:text-white">{{ $unit->conversion_factor }}</span></p>
                                 <p class="text-gray-600 dark:text-gray-300">Harga Jual: <span class="text-gray-900 dark:text-white">Rp {{ number_format($unit->selling_price, 0) }}</span></p>
                                 <p class="text-gray-600 dark:text-gray-300">Harga Beli: <span class="text-gray-900 dark:text-white">Rp {{ number_format($unit->purchase_price, 0) }}</span></p>
+                                <p class="text-amber-600 dark:text-amber-400 font-semibold">
+                                    ⭐ Harga Member: 
+                                    <span class="text-amber-700 dark:text-amber-300">
+                                        {{ $unit->member_price ? 'Rp ' . number_format($unit->member_price, 0) : '-' }}
+                                    </span>
+                                </p>
                             </div>
                         </div>
                     @empty
