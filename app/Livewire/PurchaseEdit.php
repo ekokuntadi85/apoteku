@@ -32,9 +32,11 @@ class PurchaseEdit extends Component
     public $product_id;
     public $batch_number;
     public $purchase_price; // This will be the price per selected unit
+    public $selling_price; // Selling price per selected unit
     public $stock; // This will be the stock in the selected unit
     public $expiration_date;
     public $lastKnownPurchasePrice; // Properti baru untuk menyimpan harga beli terakhir (dalam satuan dasar)
+    public $lastKnownSellingPrice; // Last known selling price
 
     public $selectedProductUnits = []; // New property for available units for selected product
     public $selectedProductUnitId; // New property for the currently selected unit ID
@@ -75,6 +77,7 @@ class PurchaseEdit extends Component
         'selectedProductUnitId' => 'required|exists:product_units,id', // New rule
         'batch_number' => 'nullable|string|max:255',
         'purchase_price' => 'required|numeric|min:0',
+        'selling_price' => 'required|numeric|min:0',
         'stock' => 'required|integer|min:1',
         'expiration_date' => 'nullable|date',
     ];
@@ -94,11 +97,13 @@ class PurchaseEdit extends Component
         'purchase_items.min' => 'Setidaknya ada satu item pembelian.',
         'product_id.required' => 'Produk wajib dipilih.',
         'product_id.exists' => 'Produk tidak valid.',
-        'selectedProductUnitId.required' => 'Satuan produk wajib dipilih.', // New message
         'selectedProductUnitId.exists' => 'Satuan produk tidak valid.', // New message
         'purchase_price.required' => 'Harga beli wajib diisi.',
         'purchase_price.numeric' => 'Harga beli harus berupa angka.',
         'purchase_price.min' => 'Harga beli tidak boleh negatif.',
+        'selling_price.required' => 'Harga jual wajib diisi.',
+        'selling_price.numeric' => 'Harga jual harus berupa angka.',
+        'selling_price.min' => 'Harga jual tidak boleh negatif.',
         'stock.required' => 'Kuantitas wajib diisi.', // Changed from Stok to Kuantitas
         'stock.integer' => 'Kuantitas harus berupa angka bulat.', // Changed from Stok to Kuantitas
         'stock.min' => 'Kuantitas minimal 1.', // Changed from Stok to Kuantitas
@@ -187,12 +192,16 @@ class PurchaseEdit extends Component
             if ($baseUnit) {
                 $this->selectedProductUnitId = (string) $baseUnit->id;
                 $this->purchase_price = $baseUnit->purchase_price; // Set initial purchase price to base unit's
+                $this->selling_price = $baseUnit->selling_price; // Set initial selling price
                 $this->selectedProductUnitPurchasePrice = $baseUnit->purchase_price;
+                $this->lastKnownSellingPrice = $baseUnit->selling_price;
                 $this->selectedUnitConversionFactor = $baseUnit->conversion_factor ?: 1;
             } else {
                 $this->selectedProductUnitId = null;
                 $this->purchase_price = '';
+                $this->selling_price = '';
                 $this->selectedProductUnitPurchasePrice = '';
+                $this->lastKnownSellingPrice = null;
             }
 
             // Ambil harga beli terakhir dari batch produk terbaru (dalam satuan dasar)
@@ -223,8 +232,10 @@ class PurchaseEdit extends Component
         $selectedUnit = collect($this->selectedProductUnits)->firstWhere('id', $value);
         if ($selectedUnit) {
             $this->purchase_price = $selectedUnit['purchase_price'];
+            $this->selling_price = $selectedUnit['selling_price'];
             $this->selectedProductUnitPurchasePrice = $selectedUnit['purchase_price'];
             $this->selectedUnitConversionFactor = $selectedUnit['conversion_factor'] ?: 1;
+            $this->lastKnownSellingPrice = $selectedUnit['selling_price'];
 
             // If there's a last known base unit purchase price, convert it to the new selected unit's price
             if ($this->lastKnownPurchasePrice !== null) {
@@ -458,6 +469,7 @@ class PurchaseEdit extends Component
         $this->selectedProductName = '';
         $this->batch_number = '';
         $this->purchase_price = '';
+        $this->selling_price = '';
         $this->stock = '';
         $this->expiration_date = '';
         $this->searchProduct = '';
@@ -465,7 +477,8 @@ class PurchaseEdit extends Component
         $this->selectedProductUnits = []; // Reset new properties
         $this->selectedProductUnitId = null; // Reset new properties
         $this->selectedProductUnitPurchasePrice = ''; // Reset new properties
-        $this->resetErrorBag(['product_id', 'selectedProductUnitId', 'batch_number', 'purchase_price', 'stock', 'expiration_date']);
+        $this->lastKnownSellingPrice = null;
+        $this->resetErrorBag(['product_id', 'selectedProductUnitId', 'batch_number', 'purchase_price', 'selling_price', 'stock', 'expiration_date']);
     }
 
     public function render()
