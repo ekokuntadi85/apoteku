@@ -47,6 +47,7 @@ class PurchaseEdit extends Component
     public $showPriceWarningModal = false;
     public $newSellingPrice;
     public $newMemberPrice;
+    public $isMemberPriceEdited = false; // Flag to track if member price was manually edited
     public $itemToAddCache = null;
 
     protected function rules()
@@ -304,6 +305,7 @@ class PurchaseEdit extends Component
 
             $this->newSellingPrice = $suggestedSellingPrice;
             $this->newMemberPrice = $suggestedMemberPrice;
+            $this->isMemberPriceEdited = false; // Reset flag when modal opens
             
             $this->showPriceWarningModal = true;
             return;
@@ -377,6 +379,20 @@ class PurchaseEdit extends Component
         $this->closePriceWarningModal();
         $this->resetItemForm();
         $this->dispatch('focus-search');
+    }
+
+    public function updatedNewSellingPrice($value)
+    {
+        // Automatically sync member price if it hasn't been manually edited
+        if (!$this->isMemberPriceEdited) {
+            $this->newMemberPrice = $value;
+        }
+    }
+
+    public function updatedNewMemberPrice($value)
+    {
+        // Mark as manually edited to stop auto-sync
+        $this->isMemberPriceEdited = true;
     }
 
     public function closePriceWarningModal()

@@ -271,13 +271,13 @@
             <div class="grid grid-cols-2 gap-4 mt-6">
                 <div>
                     <label for="newSellingPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Update Harga Jual</label>
-                    <input type="number" id="newSellingPrice" wire:model="newSellingPrice" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" id="newSellingPrice" wire:model.live="newSellingPrice" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600">
                     <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Harga Saat Ini: Rp {{ number_format($itemToAddCache['current_selling_price'] ?? 0, 0) }}</p>
                     <p class="text-[10px] text-red-500 mt-0.5">Minimal: Rp {{ number_format($itemToAddCache['purchase_price'], 0) }}</p>
                 </div>
                 <div>
                     <label for="newMemberPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Update Harga Member</label>
-                    <input type="number" id="newMemberPrice" wire:model="newMemberPrice" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600">
+                    <input type="number" id="newMemberPrice" wire:model.live="newMemberPrice" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-900 dark:text-gray-200 dark:border-gray-600">
                     <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Harga Saat Ini: Rp {{ number_format($itemToAddCache['current_member_price'] ?? 0, 0) }}</p>
                     <p class="text-[10px] text-red-500 mt-0.5">Minimal: Rp {{ number_format($itemToAddCache['purchase_price'], 0) }}</p>
                 </div>

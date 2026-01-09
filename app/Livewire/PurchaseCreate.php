@@ -52,6 +52,7 @@ class PurchaseCreate extends Component
     public $showPriceWarningModal = false;
     public $newSellingPrice;
     public $newMemberPrice;
+    public $isMemberPriceEdited = false; // Flag to track if member price was manually edited
     public $itemToAddCache = null;
 
     // PO Integration
@@ -398,6 +399,7 @@ class PurchaseCreate extends Component
 
             $this->newSellingPrice = $suggestedSellingPrice;
             $this->newMemberPrice = $suggestedMemberPrice;
+            $this->isMemberPriceEdited = false; // Reset flag when modal opens
             
             $this->showPriceWarningModal = true;
             return;
@@ -498,6 +500,20 @@ class PurchaseCreate extends Component
         if (!isset($this->itemToAddCache['index'])) {
             $this->resetItemForm();
         }
+    }
+
+    public function updatedNewSellingPrice($value)
+    {
+        // Automatically sync member price if it hasn't been manually edited
+        if (!$this->isMemberPriceEdited) {
+            $this->newMemberPrice = $value;
+        }
+    }
+
+    public function updatedNewMemberPrice($value)
+    {
+        // Mark as manually edited to stop auto-sync
+        $this->isMemberPriceEdited = true;
     }
 
     public function closePriceWarningModal()
