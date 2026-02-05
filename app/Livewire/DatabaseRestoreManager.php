@@ -20,7 +20,7 @@ class DatabaseRestoreManager extends Component
     public function restoreDatabase()
     {
         $this->validate([
-                        'sqlFile' => 'required|file|mimes:sql,txt,bin', // 'bin' for application/octet-stream
+                        'sqlFile' => 'required|file|mimes:sql,txt,bin|max:102400', // 'bin' for application/octet-stream, max 100MB
         ]);
 
         $this->isRestoring = true;
@@ -32,26 +32,49 @@ class DatabaseRestoreManager extends Component
             $absoluteTempPath = Storage::path($tempPath);
             $this->restoreLog .= "File backup disimpan sementara di: {$absoluteTempPath}\n";
 
-            // Ambil konfigurasi database
-            $dbConfig = config('database.connections.mysql');
-            $host = $dbConfig['host'];
-            $database = $dbConfig['database'];
-            $username = $dbConfig['username'];
-            $password = $dbConfig['password'];
+            // Ambil konfigurasi database secara dinamis
+            $defaultConnection = config('database.default');
+            $dbConfig = config('database.connections.' . $defaultConnection);
+            $driver = $dbConfig['driver'];
+            $this->restoreLog .= "Menggunakan driver database: " . $driver . "\n";
 
-            $this->restoreLog .= "Menjalankan perintah mysql untuk restore...\n";
+            if ($driver === 'sqlite') {
+                $dbPath = $dbConfig['database'];
+                $this->restoreLog .= "Menyalin file backup ke: {$dbPath}\n";
+                // Ensure the directory exists
+                if (!file_exists(dirname($dbPath))) {
+                    mkdir(dirname($dbPath), 0777, true);
+                }
+                copy($absoluteTempPath, $dbPath);
+                $process = (object)['successful' => fn() => true, 'errorOutput' => fn() => '']; // Mock a successful process result
+            } elseif (in_array($driver, ['mysql', 'mariadb'])) {
+                // Ambil konfigurasi database
+                $host = $dbConfig['host'];
+                $database = $dbConfig['database'];
+                $username = $dbConfig['username'];
+                $password = $dbConfig['password'];
+                $port = $dbConfig['port'] ?? '3306'; // Default MySQL port
 
-            // Bangun dan jalankan perintah mysql
-            $command = sprintf(
-                'mariadb -h%s -u%s -p%s --skip-ssl %s < %s',
-                escapeshellarg($host),
-                escapeshellarg($username),
-                escapeshellarg($password),
-                escapeshellarg($database),
-                escapeshellarg($absoluteTempPath)
-            );
+                $this->restoreLog .= "Menjalankan perintah " . $driver . " untuk restore...\n";
 
-            $process = Process::run($command);
+                // Determine the correct client executable
+                $client = ($driver === 'mariadb') ? 'mariadb' : 'mysql';
+
+                // Construct the command
+                $command = sprintf(
+                    '%s -h%s -P%s -u%s -p%s --skip-ssl %s < %s',
+                    escapeshellarg($client),
+                    escapeshellarg($host),
+                    escapeshellarg($port),
+                    escapeshellarg($username),
+                    escapeshellarg($password),
+                    escapeshellarg($database),
+                    escapeshellarg($absoluteTempPath)
+                );
+                $process = Process::run($command);
+            } else {
+                throw new \Exception("Database driver '{$driver}' tidak didukung untuk operasi restore.");
+            }
 
             if ($process->successful()) {
                 $this->restoreLog .= "\nPROSES RESTORE BERHASIL!\n";
