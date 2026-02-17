@@ -367,6 +367,16 @@ class PurchaseEdit extends Component
             'newMemberPrice.min' => 'Harga member tidak boleh lebih rendah dari harga beli (Rp ' . number_format($purchasePriceInBaseUnit, 0) . ').',
         ]);
 
+        // Warning (not error) if member price is higher than selling price
+        // This is allowed but unusual, so we notify the user
+        if ($this->newMemberPrice > $this->newSellingPrice) {
+            $this->dispatch('selling-price-warning', 
+                '⚠️ Perhatian: Harga member (Rp ' . number_format($this->newMemberPrice, 0) . 
+                ') lebih tinggi dari harga jual umum (Rp ' . number_format($this->newSellingPrice, 0) . 
+                '). Pastikan ini sudah benar.'
+            );
+        }
+
         $product = Product::find($this->itemToAddCache['product_id']);
         if ($product && $product->baseUnit) {
             $product->baseUnit->selling_price = $this->newSellingPrice;

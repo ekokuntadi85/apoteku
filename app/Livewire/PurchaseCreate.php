@@ -471,6 +471,16 @@ class PurchaseCreate extends Component
             'newMemberPrice.min' => 'Harga member tidak boleh lebih rendah dari harga beli (Rp ' . number_format($purchasePrice, 0) . ').',
         ]);
 
+        // Warning (not error) if member price is higher than selling price
+        // This is allowed but unusual, so we notify the user
+        if ($this->newMemberPrice > $this->newSellingPrice) {
+            $this->dispatch('selling-price-warning', 
+                '⚠️ Perhatian: Harga member (Rp ' . number_format($this->newMemberPrice, 0) . 
+                ') lebih tinggi dari harga jual umum (Rp ' . number_format($this->newSellingPrice, 0) . 
+                '). Pastikan ini sudah benar.'
+            );
+        }
+
         // Update the selling price and member price in the cached item
         $this->itemToAddCache['selling_price'] = $this->newSellingPrice;
         $this->itemToAddCache['member_price'] = $this->newMemberPrice;
