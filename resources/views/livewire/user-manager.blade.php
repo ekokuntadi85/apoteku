@@ -14,7 +14,13 @@
             </div>
             <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari pengguna..." class="shadow appearance-none border rounded py-2 pl-10 pr-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-full dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
         </div>
-        <button type="button" wire:click="createUser()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full md:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 md:ml-4">Tambah Pengguna</button>
+        <div class="flex items-center space-x-4">
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" wire:model.live="showDeactivated" class="form-checkbox h-5 w-5 text-blue-600 dark:bg-gray-700 dark:border-gray-600">
+                <span class="text-gray-700 dark:text-gray-300">Tampilkan Nonaktif</span>
+            </label>
+            <button type="button" wire:click="createUser()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full md:w-auto dark:bg-blue-600 dark:hover:bg-blue-700">Tambah Pengguna</button>
+        </div>
     </div>
 
     <!-- Desktop Table View -->
@@ -32,14 +38,19 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                     @foreach($users as $user)
-                    <tr class="dark:hover:bg-gray-700">
+                    <tr class="dark:hover:bg-gray-700 {{ $user->trashed() ? 'bg-gray-100 dark:bg-gray-900' : '' }}">
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $user->id }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $user->name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $user->email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-200">{{ $user->getRoleNames()->implode(', ') }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button wire:click="edit({{ $user->id }})" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-full mr-2 dark:bg-green-600 dark:hover:bg-green-700">Edit</button>
-                            <button wire:click="delete({{ $user->id }})" onclick="confirm('Apakah Anda yakin ingin menghapus pengguna ini?') || event.stopImmediatePropagation()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-full dark:bg-red-600 dark:hover:bg-red-700">Hapus</button>
+                            @if ($user->trashed())
+                                <button wire:click="restore({{ $user->id }})" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded-full mr-2 dark:bg-yellow-600 dark:hover:bg-yellow-700">Aktifkan</button>
+                                <button wire:click="forceDelete({{ $user->id }})" onclick="confirm('Yakin hapus permanen? Aksi ini tidak bisa dibatalkan.') || event.stopImmediatePropagation()" class="bg-red-700 hover:bg-red-900 text-white font-bold py-1 px-3 rounded-full dark:bg-red-800 dark:hover:bg-red-900">Hapus Permanen</button>
+                            @else
+                                <button wire:click="edit({{ $user->id }})" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-full mr-2 dark:bg-green-600 dark:hover:bg-green-700">Edit</button>
+                                <button wire:click="delete({{ $user->id }})" onclick="confirm('Apakah Anda yakin ingin menonaktifkan pengguna ini?') || event.stopImmediatePropagation()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-full dark:bg-red-600 dark:hover:bg-red-700">Nonaktifkan</button>
+                            @endif
                         </td>
                     </tr>
                     @endforeach
@@ -51,16 +62,21 @@
     <!-- Mobile Card View -->
     <div class="block md:hidden space-y-4">
         @forelse($users as $user)
-        <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+        <div class="bg-white dark:bg-gray-700 shadow-md rounded-lg p-4 border border-gray-200 dark:border-gray-600 {{ $user->trashed() ? 'bg-gray-100 dark:bg-gray-900' : '' }}">
             <div class="flex justify-between items-start">
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $user->name }}</h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->email }}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Peran: {{ $user->getRoleNames()->implode(', ') }}</p>
                 </div>
-                <div class="flex space-x-2">
-                    <button wire:click="edit({{ $user->id }})" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-green-600 dark:hover:bg-green-700">Edit</button>
-                    <button wire:click="delete({{ $user->id }})" onclick="confirm('Apakah Anda yakin ingin menghapus pengguna ini?') || event.stopImmediatePropagation()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-red-600 dark:hover:bg-red-700">Hapus</button>
+                <div class="flex flex-col space-y-2">
+                    @if ($user->trashed())
+                        <button wire:click="restore({{ $user->id }})" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-yellow-600 dark:hover:bg-yellow-700">Aktifkan</button>
+                        <button wire:click="forceDelete({{ $user->id }})" onclick="confirm('Yakin hapus permanen? Aksi ini tidak bisa dibatalkan.') || event.stopImmediatePropagation()" class="bg-red-700 hover:bg-red-900 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-red-800 dark:hover:bg-red-900">Hapus Permanen</button>
+                    @else
+                        <button wire:click="edit({{ $user->id }})" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-green-600 dark:hover:bg-green-700">Edit</button>
+                        <button wire:click="delete({{ $user->id }})" onclick="confirm('Apakah Anda yakin ingin menonaktifkan pengguna ini?') || event.stopImmediatePropagation()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-full text-xs dark:bg-red-600 dark:hover:bg-red-700">Nonaktifkan</button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -86,7 +102,7 @@
                 </div>
                 <div class="mb-4">
                     <label for="email" class="block text-gray-700 text-sm font-bold mb-2 dark:text-gray-300">Email:</label>
-                    <input type="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" id="email" wire:model="email">
+                    <input type="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gamma-700 dark:text-gray-200 dark:border-gray-600" id="email" wire:model="email">
                     @error('email') <span class="text-red-500 text-xs italic">{{ $message }}</span>@enderror
                 </div>
                 <div class="mb-4">

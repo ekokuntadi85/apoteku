@@ -301,6 +301,7 @@ class PurchaseEdit extends Component
 
             // Suggest new prices - must be at least the new purchase price
             $suggestedSellingPrice = max($this->selling_price, $this->purchase_price);
+            // Member price minimum is purchase price (can be below selling price)
             $suggestedMemberPrice = max((float)($selectedUnit['member_price'] ?? 0), $this->purchase_price);
 
             $this->newSellingPrice = $suggestedSellingPrice;

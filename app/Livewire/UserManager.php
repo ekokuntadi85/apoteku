@@ -23,6 +23,7 @@ class UserManager extends Component
     public $roles = [];
     public $selectedRoles = [];
     public $showModal = false;
+    public $showDeactivated = false;
     public $search = ''; // Added for search functionality // New property for modal visibility
 
     public function mount()
@@ -65,6 +66,9 @@ class UserManager extends Component
                                 $query->where('name', 'like', '%' . $this->search . '%')
                                       ->orWhere('email', 'like', '%' . $this->search . '%');
                             })
+                            ->when($this->showDeactivated, function ($query) {
+                                $query->onlyTrashed();
+                            })
                             ->latest()
                             ->paginate(5);
         return view('livewire.user-manager', compact('users'));
@@ -75,7 +79,7 @@ class UserManager extends Component
         $this->validate();
 
         if ($this->isUpdateMode) {
-            $user = User::find($this->userId);
+            $user = User::withTrashed()->find($this->userId);
             $data = [
                 'name' => $this->name,
                 'email' => $this->email,
@@ -107,7 +111,7 @@ class UserManager extends Component
 
     public function edit($id)
     {
-        $user = User::findOrFail($id);
+        $user = User::withTrashed()->findOrFail($id);
         $this->userId = $user->id;
         $this->name = $user->name;
         $this->email = $user->email;
@@ -119,7 +123,19 @@ class UserManager extends Component
     public function delete($id)
     {
         User::find($id)->delete();
-        session()->flash('message', 'Pengguna berhasil dihapus.');
+        session()->flash('message', 'Pengguna berhasil dinonaktifkan.');
+    }
+
+    public function restore($id)
+    {
+        User::withTrashed()->find($id)->restore();
+        session()->flash('message', 'Pengguna berhasil diaktifkan kembali.');
+    }
+
+    public function forceDelete($id)
+    {
+        User::withTrashed()->find($id)->forceDelete();
+        session()->flash('message', 'Pengguna berhasil dihapus secara permanen.');
     }
 
     public function resetInput()
@@ -140,6 +156,11 @@ class UserManager extends Component
     }
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingShowDeactivated()
     {
         $this->resetPage();
     }
