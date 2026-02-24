@@ -67,7 +67,7 @@ class ProductManager extends Component
 
     public function render()
     {
-        $query = Product::with(['category', 'baseUnit', 'productUnits'])
+        $query = Product::with(['category', 'baseUnit', 'productUnits.latestBatch'])
             ->withSum('productBatches as total_stock_sum', 'stock')
             ->where(function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')

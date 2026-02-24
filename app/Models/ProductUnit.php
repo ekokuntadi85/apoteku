@@ -27,4 +27,12 @@ class ProductUnit extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    /**
+     * Get the latest batch for this product unit to fetch the most recent purchase price.
+     */
+    public function latestBatch()
+    {
+        return $this->hasOne(ProductBatch::class)->latestOfMany();
+    }
 }

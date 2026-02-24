@@ -154,7 +154,10 @@
                                             <div class="flex items-center gap-3 text-sm bg-gray-100/50 dark:bg-gray-900/40 p-1.5 px-3 rounded-lg border border-gray-100 dark:border-gray-700 max-w-sm shadow-sm">
                                                 <span class="font-black text-emerald-600 dark:text-emerald-400 w-16 uppercase text-[10px] tracking-widest">{{ $unit->name }}</span>
                                                 <div class="flex items-center gap-4 border-l-2 border-gray-200 dark:border-gray-700 pl-3">
-                                                    <span class="text-gray-400 text-[10px] font-black uppercase tracking-tighter">B: <span class="text-gray-700 dark:text-gray-300 font-bold italic text-sm">{{ number_format($unit->purchase_price, 0, ',', '.') }}</span></span>
+                                                    @php
+                                                        $purchasePrice = $unit->latestBatch->purchase_price ?? $unit->purchase_price;
+                                                    @endphp
+                                                    <span class="text-gray-400 text-[10px] font-black uppercase tracking-tighter">B: <span class="text-gray-700 dark:text-gray-300 font-bold italic text-sm">{{ number_format($purchasePrice, 0, ',', '.') }}</span></span>
                                                     <span class="text-emerald-600/50 text-[10px] font-black uppercase tracking-tighter">S: <span class="text-emerald-700 dark:text-emerald-400 font-black text-base">{{ number_format($unit->selling_price, 0, ',', '.') }}</span></span>
                                                     @if($unit->member_price)
                                                         <span class="text-indigo-600/50 text-[10px] font-black uppercase tracking-tighter">M: <span class="text-indigo-700 dark:text-indigo-400 font-black text-base">{{ number_format($unit->member_price, 0, ',', '.') }}</span></span>
@@ -218,8 +221,11 @@
                                     <span class="text-xs font-black text-gray-500 uppercase tracking-widest">{{ $unit->name }}</span>
                                     <div class="flex gap-4">
                                         <div class="flex flex-col items-end">
+                                            @php
+                                                $purchasePrice = $unit->latestBatch->purchase_price ?? $unit->purchase_price;
+                                            @endphp
                                             <span class="text-[9px] text-gray-400 font-black uppercase tracking-tighter">Beli</span>
-                                            <span class="text-sm font-bold italic">{{ number_format($unit->purchase_price, 0, ',', '.') }}</span>
+                                            <span class="text-sm font-bold italic">{{ number_format($purchasePrice, 0, ',', '.') }}</span>
                                         </div>
                                         <div class="flex flex-col items-end border-l border-gray-200 dark:border-gray-700 pl-3">
                                             <span class="text-[9px] text-emerald-500 font-black uppercase tracking-tighter">Jual</span>
@@ -325,21 +331,24 @@
                                                     </div>
                                                     <div class="flex gap-6">
                                                         <div class="text-right">
+                                                            @php
+                                                                $purchasePrice = $unit->latestBatch->purchase_price ?? $unit->purchase_price;
+                                                            @endphp
                                                             <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Harga Beli</p>
-                                                            <p class="text-sm font-bold text-gray-600 dark:text-gray-300 italic">{{ number_format($unit->purchase_price, 0, ',', '.') }}</p>
+                                                            <p class="text-sm font-bold text-gray-600 dark:text-gray-300 italic">{{ number_format($purchasePrice, 0, ',', '.') }}</p>
                                                         </div>
                                                         <div class="text-right border-l-2 border-gray-200 dark:border-gray-700 pl-4">
                                                             <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Jual (Margin)</p>
                                                             <p class="text-lg font-black text-emerald-600 dark:text-emerald-400">{{ number_format($unit->selling_price, 0, ',', '.') }}</p>
-                                                            @if($unit->selling_price > 0 && $unit->purchase_price > 0)
-                                                                <p class="text-[9px] font-bold text-gray-400 italic">({{ number_format((($unit->selling_price - $unit->purchase_price) / $unit->purchase_price) * 100, 1) }}%)</p>
+                                                            @if($unit->selling_price > 0 && $purchasePrice > 0)
+                                                                <p class="text-[9px] font-bold text-gray-400 italic">({{ number_format((($unit->selling_price - $purchasePrice) / $purchasePrice) * 100, 1) }}%)</p>
                                                             @endif
                                                         </div>
                                                         <div class="text-right border-l-2 border-gray-200 dark:border-gray-700 pl-4">
                                                             <p class="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-0.5">Member (Margin)</p>
                                                             <p class="text-lg font-black text-indigo-600 dark:text-indigo-400">{{ $unit->member_price ? number_format($unit->member_price, 0, ',', '.') : '-' }}</p>
-                                                            @if($unit->member_price > 0 && $unit->purchase_price > 0)
-                                                                @php $margin = (($unit->member_price - $unit->purchase_price) / $unit->purchase_price) * 100; @endphp
+                                                            @if($unit->member_price > 0 && $purchasePrice > 0)
+                                                                @php $margin = (($unit->member_price - $purchasePrice) / $purchasePrice) * 100; @endphp
                                                                 <p class="text-[9px] font-bold italic {{ $margin < 0 ? 'text-rose-500' : 'text-gray-400' }}">({{ number_format($margin, 1) }}%)</p>
                                                             @endif
                                                         </div>
