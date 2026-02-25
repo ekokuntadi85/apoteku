@@ -37,6 +37,7 @@ class PurchaseCreate extends Component
     public $expiration_date;
     public $lastKnownPurchasePrice; // Properti baru untuk menyimpan harga beli terakhir
     public $lastKnownSellingPrice; // Last known selling price
+    public $lastKnownMemberPrice; // Properti baru untuk harga member terakhir
     public $currentStock = 0; // Properti baru untuk stok saat ini
     
     public $payment_type = null; // 'tunai' or 'tempo'
@@ -181,10 +182,20 @@ class PurchaseCreate extends Component
                         }
                         $this->newSellingPrice = $minSellingPrice;
                         
-                        // Suggest new member price - minimum is purchase price (can be below selling price)
-                        $currentMemberPrice = $product->productUnits->firstWhere('id', $this->purchase_items[$index]['product_unit_id'])->member_price ?? 0;
-                        $this->newMemberPrice = max((float)$currentMemberPrice, $this->purchase_items[$index]['purchase_price']);
-                        
+                        // Recalculate member price proportionally
+                        $currentUnit = $product->productUnits->firstWhere('id', $this->purchase_items[$index]['product_unit_id']);
+                        $oldPurchasePrice = $lastKnownPurchasePrice * ($this->purchase_items[$index]['conversion_factor'] ?? 1);
+                        $oldSellingPrice = $currentUnit->selling_price ?? 0;
+                        $oldMemberPrice = $currentUnit->member_price ?? $oldSellingPrice;
+
+                        if ($oldSellingPrice > $oldPurchasePrice) {
+                            $ratio = ($oldMemberPrice - $oldPurchasePrice) / ($oldSellingPrice - $oldPurchasePrice);
+                            $suggestedMemberPrice = $this->purchase_items[$index]['purchase_price'] + ($ratio * ($this->newSellingPrice - $this->purchase_items[$index]['purchase_price']));
+                            $this->newMemberPrice = max($this->purchase_items[$index]['purchase_price'], round($suggestedMemberPrice, -2));
+                        } else {
+                            $this->newMemberPrice = $this->newSellingPrice;
+                        }
+
                         $this->showPriceWarningModal = true;
                     }
                 }
@@ -283,6 +294,7 @@ class PurchaseCreate extends Component
                 $this->selling_price = $baseUnit->selling_price; // Set initial selling price
                 $this->selectedProductUnitPurchasePrice = $baseUnit->purchase_price;
                 $this->lastKnownSellingPrice = $baseUnit->selling_price;
+                $this->lastKnownMemberPrice = $baseUnit->member_price;
                 $this->selectedUnitConversionFactor = $baseUnit->conversion_factor ?: 1;
             } else {
                 $this->selectedProductUnitId = null;
@@ -324,6 +336,7 @@ class PurchaseCreate extends Component
             $this->selectedProductUnitPurchasePrice = $selectedUnit['purchase_price'];
             $this->selectedUnitConversionFactor = $selectedUnit['conversion_factor'] ?: 1;
             $this->lastKnownSellingPrice = $selectedUnit['selling_price'];
+            $this->lastKnownMemberPrice = $selectedUnit['member_price'];
 
             // If there's a last known base unit purchase price, convert it to the new selected unit's price
             if ($this->lastKnownPurchasePrice !== null) {
@@ -397,10 +410,19 @@ class PurchaseCreate extends Component
             // Suggest new prices - must be at least the new purchase price
             $suggestedSellingPrice = max($this->selling_price, $this->purchase_price);
             // Member price minimum is purchase price (can be below selling price)
-            $suggestedMemberPrice = max((float)($selectedUnit['member_price'] ?? 0), $this->purchase_price);
+            // Calculate suggested member price proportionally
+            $oldPurchasePrice = $this->lastKnownPurchasePrice * $conversionFactor;
+            $oldSellingPrice = $selectedUnit['selling_price'];
+            $oldMemberPrice = $selectedUnit['member_price'] ?? $oldSellingPrice;
 
+            if ($oldSellingPrice > $oldPurchasePrice) {
+                $ratio = ($oldMemberPrice - $oldPurchasePrice) / ($oldSellingPrice - $oldPurchasePrice);
+                $suggestedMemberPrice = $this->purchase_price + ($ratio * ($suggestedSellingPrice - $this->purchase_price));
+                $this->newMemberPrice = max($this->purchase_price, round($suggestedMemberPrice, -2));
+            } else {
+                $this->newMemberPrice = $suggestedSellingPrice;
+            }
             $this->newSellingPrice = $suggestedSellingPrice;
-            $this->newMemberPrice = $suggestedMemberPrice;
             $this->isMemberPriceEdited = false; // Reset flag when modal opens
             
             $this->showPriceWarningModal = true;
@@ -518,7 +540,18 @@ class PurchaseCreate extends Component
     {
         // Automatically sync member price if it hasn't been manually edited
         if (!$this->isMemberPriceEdited) {
-            $this->newMemberPrice = $value;
+            $purchasePrice = $this->itemToAddCache['purchase_price'];
+            $oldPurchasePrice = $this->itemToAddCache['last_purchase_price'] * $this->itemToAddCache['conversion_factor'];
+            $oldSellingPrice = $this->itemToAddCache['current_selling_price'];
+            $oldMemberPrice = $this->itemToAddCache['current_member_price'] ?: $oldSellingPrice;
+
+            if ($oldSellingPrice > $oldPurchasePrice && $value > $purchasePrice) {
+                $ratio = ($oldMemberPrice - $oldPurchasePrice) / ($oldSellingPrice - $oldPurchasePrice);
+                $suggestedMemberPrice = $purchasePrice + ($ratio * ($value - $purchasePrice));
+                $this->newMemberPrice = max($purchasePrice, round($suggestedMemberPrice, -2));
+            } else {
+                $this->newMemberPrice = $value;
+            }
         }
     }
 
