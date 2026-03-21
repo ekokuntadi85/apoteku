@@ -28,7 +28,7 @@
 
         {{-- Payment Section (Menempel di bawah list item) --}}
         <div class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 pb-24 shadow-inner">
-            @include('livewire.pos-partials.cart-payment')
+            @include('livewire.pos-partials.cart-payment', ['idPrefix' => 'mobile-'])
         </div>
 
     </div>

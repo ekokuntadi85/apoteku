@@ -3,7 +3,12 @@
      x-data="{
         mobileTab: 'products',
         searchFocus() { $nextTick(() => document.getElementById('search-product-input').focus()) },
-        payFocus() { $nextTick(() => document.getElementById('amount-paid-input').focus()) }
+        payFocus() { 
+            $nextTick(() => {
+                const prefix = window.innerWidth >= 768 ? 'desktop-' : 'mobile-';
+                document.getElementById(prefix + 'amount-paid-input')?.focus();
+            })
+        }
      }"
      @keydown.slash.prevent="searchFocus()"
      @keydown.f2.prevent="payFocus()"

@@ -24,7 +24,7 @@
 
     {{-- 3. Payment Area (sticky at bottom) --}}
     <div class="shrink-0 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4 shadow-inner">
-        @include('livewire.pos-partials.cart-payment')
+        @include('livewire.pos-partials.cart-payment', ['idPrefix' => 'desktop-'])
     </div>
 
 </aside>

@@ -46,10 +46,10 @@
             <span class="text-emerald-500 font-black text-sm">Rp</span>
         </div>
         <input type="number"
-               id="amount-paid-input"
+               id="{{ $idPrefix ?? '' }}amount-paid-input"
                wire:model.live="amount_paid"
                placeholder="Jumlah Bayar (F2)"
-               class="w-full pl-10 pr-4 py-3 text-xl font-black text-right rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-0 transition-all shadow-inner @error('amount_paid') border-red-400 @enderror">
+               class="w-full pl-10 pr-4 py-3 text-xl font-black text-right rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:white focus:border-emerald-500 focus:ring-0 transition-all shadow-inner @error('amount_paid') border-red-400 @enderror">
     </div>
     @error('amount_paid') <span class="text-[10px] text-red-500 font-bold text-right block pr-2 mt-1">{{ $message }}</span> @enderror
 
