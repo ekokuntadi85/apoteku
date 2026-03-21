@@ -476,7 +476,7 @@ class PointOfSaleNew extends Component
                      ->orWhere('sku', 'like', '%' . $this->search . '%');
         }
 
-        $products = $products->with(['productUnits', 'productBatches'])->paginate(10);
+        $products = $products->with(['productUnits', 'productBatches'])->simplePaginate(8);
 
         // Get customers with search filter
         $customers = Customer::query()
