@@ -5,10 +5,17 @@
 --}}
 <div class="space-y-2">
     @forelse($cart_items as $index => $item)
-        <div class="bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 p-2 text-sm hover:border-emerald-400">
+        <div 
+            wire:click="incrementQuantity({{ $index }})"
+            class="bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 p-2 text-sm hover:border-emerald-400 cursor-pointer transition-colors"
+        >
             <div class="flex justify-between items-start mb-1">
                 <span class="font-semibold text-gray-800 dark:text-gray-200 line-clamp-1 w-4/5">{{ $item['product_name'] }}</span>
-                <button wire:click="removeItem({{ $index }})" class="text-gray-400 hover:text-red-500 shrink-0">
+                <button 
+                    @click.stop
+                    wire:click="removeItem({{ $index }})" 
+                    class="text-gray-400 hover:text-red-500 shrink-0"
+                >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -17,12 +24,15 @@
             <div class="flex items-center justify-between mt-1">
                 <div class="flex items-center space-x-1">
                     <input type="number"
+                           @click.stop
                            value="{{ $item['original_quantity_input'] }}"
                            wire:blur="updateItemQuantity({{ $index }}, $event.target.value)"
                            wire:keydown.enter="$event.target.blur()"
                            class="w-12 px-1 py-1 text-center font-bold border rounded bg-gray-50 dark:bg-gray-600 dark:text-white border-gray-300 dark:border-gray-500 focus:ring-1 focus:ring-emerald-500 text-sm">
                     @if(isset($item['available_units']) && count($item['available_units']) > 1)
-                        <select wire:change="updateItemUnit({{ $index }}, $event.target.value)"
+                        <select 
+                                @click.stop
+                                wire:change="updateItemUnit({{ $index }}, $event.target.value)"
                                 class="w-20 text-xs py-1 pl-1 pr-4 border-none bg-transparent focus:ring-0 cursor-pointer">
                             @foreach($item['available_units'] as $unit)
                                 <option value="{{ $unit['id'] }}" @selected($unit['id'] == $item['product_unit_id'])>{{ $unit['name'] }}</option>

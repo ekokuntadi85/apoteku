@@ -28,6 +28,7 @@ class PointOfSaleNew extends Component
     public $customer_id;
     public $customer_search = '';
     public $total_price = 0;
+    public $focusCounter = 0; // Pemicu fokus untuk Alpine.js
     public $search = '';
     public $amount_paid;
     public $change = 0;
@@ -144,9 +145,16 @@ class PointOfSaleNew extends Component
         }
 
         if ($foundIndex !== -1) {
+            // Bug Fix 1: Check if adding one more exceeds stock
+            $nextQuantityBase = ($this->cart_items[$foundIndex]['original_quantity_input'] + 1) * $this->cart_items[$foundIndex]['conversion_factor'];
+            if ($totalStockInBaseUnits < $nextQuantityBase) {
+                session()->flash('error', 'Stok tidak mencukupi untuk menambah ' . $product->name);
+                return;
+            }
+
             // Increment quantity
             $this->cart_items[$foundIndex]['original_quantity_input'] += 1;
-            $this->cart_items[$foundIndex]['quantity'] += $quantityInBaseUnits;
+            $this->cart_items[$foundIndex]['quantity'] = $nextQuantityBase;
             $this->cart_items[$foundIndex]['subtotal'] = $this->cart_items[$foundIndex]['original_quantity_input'] * $this->cart_items[$foundIndex]['price'];
         } else {
             // Add new item with member pricing
@@ -182,6 +190,32 @@ class PointOfSaleNew extends Component
         $this->dispatch('focus-search-input');
     }
 
+    /**
+     * Logic 4: Increment quantity directly from cart card click
+     */
+    public function incrementQuantity($index)
+    {
+        if (!isset($this->cart_items[$index])) return;
+        
+        $item = $this->cart_items[$index];
+        $currentQty = $item['original_quantity_input'];
+        $product = Product::find($item['product_id']);
+        
+        if (!$product) return;
+        
+        // Find conversion factor
+        $conversionFactor = $item['conversion_factor'] ?? 1;
+        $newQuantityBase = ($currentQty + 1) * $conversionFactor;
+        $totalStockInBaseUnits = $product->productBatches->sum('stock');
+
+        if ($totalStockInBaseUnits < $newQuantityBase) {
+            session()->flash('error', 'Stok tidak cukup untuk menambah ' . $product->name);
+            return;
+        }
+
+        $this->updateQuantity($index, $currentQty + 1);
+    }
+
     // NEW: Update item unit from cart
     public function updateItemUnit($index, $newUnitId)
     {
@@ -203,8 +237,15 @@ class PointOfSaleNew extends Component
         $quantityInBaseUnits = $item['original_quantity_input'] * $newUnit['conversion_factor'];
 
         if ($totalStockInBaseUnits < $quantityInBaseUnits) {
-            session()->flash('error', 'Stok tidak mencukupi untuk satuan ' . $newUnit['name']);
-            return;
+            // Bug Fix 2: Auto-clamp to max available stock for the new unit
+            $maxAvailable = floor($totalStockInBaseUnits / $newUnit['conversion_factor']);
+            if ($maxAvailable <= 0) {
+                session()->flash('error', 'Stok tidak mencukupi untuk satuan ' . $newUnit['name']);
+                return;
+            }
+            $item['original_quantity_input'] = $maxAvailable;
+            $quantityInBaseUnits = $maxAvailable * $newUnit['conversion_factor'];
+            session()->flash('warning', 'Jumlah disesuaikan ke stok maksimal: ' . $maxAvailable);
         }
 
         // Update item details with member pricing
@@ -258,11 +299,16 @@ class PointOfSaleNew extends Component
         $totalStockInBaseUnits = $product->productBatches->sum('stock');
 
         if ($totalStockInBaseUnits < $newQuantityBase) {
-            session()->flash('error', 'Stok tidak cukup untuk ' . $product->name);
-            // Reset to max available or keep old? 
-            // For now, let's just warn and not update, or clamp?
-            // Let's just return to prevent invalid state
-             return;
+            // Bug Fix 2: Auto-clamp to max available stock
+            $maxAvailable = floor($totalStockInBaseUnits / $conversionFactor);
+            if ($maxAvailable <= 0) {
+                $this->removeItem($index);
+                session()->flash('error', 'Stok habis, item dihapus dari keranjang.');
+                return;
+            }
+            $quantity = $maxAvailable;
+            $newQuantityBase = $quantity * $conversionFactor;
+            session()->flash('warning', 'Jumlah disesuaikan ke stok maksimal: ' . $maxAvailable);
         }
 
         $this->cart_items[$index]['original_quantity_input'] = $quantity;
@@ -328,6 +374,10 @@ class PointOfSaleNew extends Component
     private function calculateTotalPrice()
     {
         $this->total_price = array_sum(array_column($this->cart_items, 'subtotal'));
+        
+        // Logic 3: Automatically sync amount_paid with total_price for speed
+        $this->amount_paid = $this->total_price;
+        
         $this->calculateChange();
     }
 
@@ -338,7 +388,7 @@ class PointOfSaleNew extends Component
 
     private function calculateChange()
     {
-        $this->change = $this->amount_paid - $this->total_price;
+        $this->change = ($this->amount_paid ?? 0) - $this->total_price;
     }
 
     public function checkout()
@@ -410,6 +460,8 @@ class PointOfSaleNew extends Component
                     'shouldPrint' => $this->print_receipt
                 ]);
                 $this->resetAll();
+                $this->focusCounter++; // Picu Alpine.js untuk ambil fokus
+                $this->dispatch('focus-search-input');
 
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -474,9 +526,33 @@ class PointOfSaleNew extends Component
         if (!empty($this->search)) {
             $products->where('name', 'like', '%' . $this->search . '%')
                      ->orWhere('sku', 'like', '%' . $this->search . '%');
-        }
+            $products = $products->with(['productUnits', 'productBatches'])->simplePaginate(8);
+        } else {
+            // Logic 1: Show top 8 most sold products when search is empty
+            $topProductIds = TransactionDetail::select('product_id', \DB::raw('COUNT(*) as sales_count'))
+                ->groupBy('product_id')
+                ->orderByDesc('sales_count')
+                ->limit(8)
+                ->pluck('product_id');
 
-        $products = $products->with(['productUnits', 'productBatches'])->simplePaginate(8);
+            if ($topProductIds->isNotEmpty()) {
+                $products->whereIn('id', $topProductIds);
+            } else {
+                // Fallback to latest products if no sales yet
+                $products->latest();
+            }
+            
+            $products = $products->with(['productUnits', 'productBatches'])->take(8)->get();
+            
+            // To make it compatible with pagination links in blade, 
+            // we wrap it in a dummy length aware paginator if needed, 
+            // but simplePaginate(8) with empty search is better if we want pagination.
+            // However, user said "Tampilkan 8 item terlaris", so exact 8 is fine.
+            // Let's use simplePaginate anyway for consistent variable type.
+            $products = Product::whereIn('id', $topProductIds)
+                ->with(['productUnits', 'productBatches'])
+                ->simplePaginate(8);
+        }
 
         // Get customers with search filter
         $customers = Customer::query()

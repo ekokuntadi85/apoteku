@@ -2,17 +2,46 @@
      @reset-mobile-tab.window="mobileTab = 'products'"
      x-data="{
         mobileTab: 'products',
+        needsFocus: false,
         searchFocus() { $nextTick(() => document.getElementById('search-product-input').focus()) },
-        payFocus() { 
-            $nextTick(() => {
-                const prefix = window.innerWidth >= 768 ? 'desktop-' : 'mobile-';
-                document.getElementById(prefix + 'amount-paid-input')?.focus();
-            })
-        }
      }"
+     @transaction-completed.window="
+         const data = Array.isArray($event.detail) ? $event.detail[0] : $event.detail;
+         if (data && data.shouldPrint && data.transactionId) {
+             window.open(`/transactions/${data.transactionId}/receipt`, '_blank');
+         }
+         mobileTab = 'products';
+         
+         setTimeout(() => {
+             const el = document.getElementById('search-product-input');
+             if (el && !document.hidden) {
+                 el.focus();
+             } else {
+                 needsFocus = true;
+             }
+         }, 300);
+     "
+     @focus-search-input.window="
+         setTimeout(() => {
+             const el = document.getElementById('search-product-input');
+             if (el && !document.hidden) {
+                 el.focus();
+             } else {
+                 needsFocus = true;
+             }
+         }, 100);
+     "
+     @focus.window="
+         if (needsFocus) {
+             setTimeout(() => {
+                 const el = document.getElementById('search-product-input');
+                 if (el) el.focus();
+                 needsFocus = false;
+             }, 100);
+         }
+     "
      @keydown.slash.prevent="searchFocus()"
-     @keydown.f2.prevent="payFocus()"
-     @keydown.escape="document.activeElement.blur()"
+     @keydown.escape.window.stop="$wire.set('search', ''); searchFocus();"
 >
 
     <!-- Global Toast Notifications -->
@@ -47,6 +76,7 @@
             </div>
             <input type="text"
                 id="search-product-input"
+                x-init="$el.focus()"
                 wire:model.live.debounce.300ms="search"
                 wire:keydown.enter.prevent="searchProducts"
                 placeholder="Cari... (/)"
@@ -208,8 +238,8 @@
         <!-- Left Panel: Product Grid -->
         <main :class="mobileTab !== 'products' ? 'hidden md:block' : ''" class="flex-1 min-w-0 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
             
-            <!-- Grid -->
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-24 md:pb-0">
+            <!-- Grid (3 Kolom pada Desktop agar lebih lega) -->
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 pb-24 md:pb-0">
                  @forelse ($products as $product)
                     @php
                         $totalStock = $product->productBatches->sum('stock');
@@ -297,41 +327,4 @@
     </div>
     @endif
 
-    <!-- Scripts -->
-    @script
-    <script>
-        // Helper untuk cek apakah layar desktop (untuk auto-focus)
-        const isDesktop = () => window.innerWidth >= 768;
-
-        Livewire.on('transaction-completed', (event) => {
-            const { transactionId, shouldPrint } = event[0];
-            if (shouldPrint) {
-                window.open(`/transactions/${transactionId}/receipt`, '_blank');
-            }
-            // Reset tampilan ke tab Produk di mobile setelah transaksi selesai
-            window.dispatchEvent(new CustomEvent('reset-mobile-tab'));
-            
-            // Auto-focus hanya di Desktop setelah transaksi
-            if (isDesktop()) {
-                setTimeout(() => {
-                    document.getElementById('search-product-input')?.focus();
-                }, 100);
-            }
-        });
-
-        Livewire.on('focus-search-input', () => {
-             // Auto-focus hanya di Desktop saat tambah produk
-             if (isDesktop()) {
-                document.getElementById('search-product-input')?.focus();
-             }
-        });
-
-        // Initialize focus (Hanya di Desktop saat awal buka halaman)
-        document.addEventListener('DOMContentLoaded', () => {
-             if (isDesktop()) {
-                document.getElementById('search-product-input')?.focus();
-             }
-        });
-    </script>
-    @endscript
 </div>
