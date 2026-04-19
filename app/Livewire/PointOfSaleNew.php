@@ -152,16 +152,22 @@ class PointOfSaleNew extends Component
                 return;
             }
 
-            // Increment quantity
-            $this->cart_items[$foundIndex]['original_quantity_input'] += 1;
-            $this->cart_items[$foundIndex]['quantity'] = $nextQuantityBase;
-            $this->cart_items[$foundIndex]['subtotal'] = $this->cart_items[$foundIndex]['original_quantity_input'] * $this->cart_items[$foundIndex]['price'];
+            // Increment quantity and move to top
+            $updatedItem = $this->cart_items[$foundIndex];
+            $updatedItem['original_quantity_input'] += 1;
+            $updatedItem['quantity'] = $nextQuantityBase;
+            $updatedItem['subtotal'] = $updatedItem['original_quantity_input'] * $updatedItem['price'];
+            
+            unset($this->cart_items[$foundIndex]);
+            $this->cart_items = array_values($this->cart_items); // Reindex
+            array_unshift($this->cart_items, $updatedItem);
+
         } else {
             // Add new item with member pricing
             $actualPrice = $this->getMemberPrice($defaultUnit);
             $isMemberPrice = ($actualPrice != $defaultUnit->selling_price);
             
-            $this->cart_items[] = [
+            array_unshift($this->cart_items, [
                 'product_id' => $product->id,
                 'product_name' => $product->name,
                 'product_unit_id' => $defaultUnit->id,
@@ -183,7 +189,7 @@ class PointOfSaleNew extends Component
                         'stock' => $unitStock
                     ];
                 })->toArray()
-            ];
+            ]);
         }
 
         $this->calculateTotalPrice();
