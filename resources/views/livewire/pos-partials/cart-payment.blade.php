@@ -1,26 +1,26 @@
 {{-- Partials: cart-payment.blade.php
      Area Pembayaran: Total, Smart Cash, Uang Pas, Input, Kembali, Cetak Struk, BAYAR
 --}}
-<div class="mb-4">
+<div class="mb-2">
     <div class="flex justify-between items-center mb-1">
         <span class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Total Pesanan</span>
         <span class="text-xs text-gray-400 font-mono">{{ count($cart_items) }} Items</span>
     </div>
-    <div class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50 shadow-sm transition-all text-center">
-        <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
+    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50 shadow-sm transition-all text-center">
+        <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
             Rp {{ number_format($total_price, 0, ',', '.') }}
         </span>
     </div>
 </div>
 
-<div class="space-y-3">
+<div class="space-y-2">
     {{-- Smart Cash Options --}}
     @if(count($this->smart_cash_options) > 0)
     <div class="grid grid-cols-4 gap-1.5 px-0.5">
         @foreach($this->smart_cash_options as $option)
             <button
                 wire:click="$set('amount_paid', {{ $option }})"
-                class="bg-white dark:bg-gray-800 border-2 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 py-2 rounded-lg text-xs font-black shadow-sm hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 active:scale-95"
+                class="bg-white dark:bg-gray-800 border-2 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 py-1.5 rounded-lg text-xs font-black shadow-sm hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 active:scale-95"
             >
                 {{ number_format($option/1000, 0) }}k
             </button>
@@ -31,11 +31,11 @@
     {{-- Uang Pas & Reset --}}
     <div class="grid grid-cols-2 gap-2">
         <button wire:click="$set('amount_paid', {{ $total_price }})"
-                class="bg-blue-600 dark:bg-blue-700 text-white border-none py-2.5 rounded-xl text-xs font-bold shadow-md hover:bg-blue-500 transition-all active:scale-95 uppercase tracking-wide">
+                class="bg-blue-600 dark:bg-blue-700 text-white border-none py-2 rounded-xl text-xs font-bold shadow-md hover:bg-blue-500 transition-all active:scale-95 uppercase tracking-wide">
             Uang Pas
         </button>
         <button wire:click="$set('amount_paid', '')"
-                class="bg-white dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:text-red-500 hover:border-red-500 transition-all active:scale-95">
+                class="bg-white dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 py-2 rounded-xl text-xs font-bold shadow-sm hover:text-red-500 hover:border-red-500 transition-all active:scale-95">
             Reset
         </button>
     </div>
@@ -50,15 +50,15 @@
                wire:model.live="amount_paid"
                wire:keydown.enter="checkout"
                placeholder="Jumlah Bayar"
-               class="w-full pl-10 pr-4 py-3 text-xl font-black text-right rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:white focus:border-emerald-500 focus:ring-0 transition-all shadow-inner @error('amount_paid') border-red-400 @enderror">
+               class="w-full pl-10 pr-4 py-2 text-lg font-black text-right rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-0 transition-all shadow-inner @error('amount_paid') border-red-400 @enderror">
     </div>
     @error('amount_paid') <span class="text-[10px] text-red-500 font-bold text-right block pr-2 mt-1">{{ $message }}</span> @enderror
 
     {{-- Kembalian --}}
     @if($amount_paid >= $total_price && $total_price > 0)
-        <div class="flex justify-between items-center bg-gray-900 dark:bg-black p-4 rounded-2xl shadow-xl transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div class="flex justify-between items-center bg-gray-900 dark:bg-black p-3 rounded-2xl shadow-xl transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
             <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Kembali</span>
-            <span class="text-2xl font-black text-amber-400">{{ number_format($change, 0, ',', '.') }}</span>
+            <span class="text-xl font-black text-amber-400">{{ number_format($change, 0, ',', '.') }}</span>
         </div>
     @endif
 
@@ -78,10 +78,10 @@
     <button wire:click="checkout"
             wire:loading.attr="disabled"
             :disabled="{{ count($cart_items) === 0 ? 'true' : 'false' }}"
-            class="w-full bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400 dark:hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 active:scale-[0.98] flex justify-center items-center relative gap-3 text-lg tracking-widest uppercase disabled:opacity-30 disabled:grayscale">
+            class="w-full bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400 dark:hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 active:scale-[0.98] flex justify-center items-center relative gap-2 text-base tracking-widest uppercase disabled:opacity-30 disabled:grayscale">
         <span wire:loading.remove>
             <div class="flex items-center gap-2">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 BAYAR
             </div>
         </span>
