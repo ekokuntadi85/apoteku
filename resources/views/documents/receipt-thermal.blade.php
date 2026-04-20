@@ -6,19 +6,20 @@
     <title>Struk Transaksi</title>
     <style>
         @page {
-            size: 54mm;
-            margin: 1mm;
+            size: 58mm auto;
+            margin: 0mm;
         }
         html, body {
-            width: 54mm;
+            width: 48mm;
+            max-width: 48mm;
             height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            margin: 0 auto !important;
+            padding: 2mm 0 !important;
             background: white;
         }
         body {
-            font-family: monospace;
-            font-size: 9pt;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 8.5pt;
             color: black;
             box-sizing: border-box;
         }
@@ -80,7 +81,8 @@
         }
         @media print {
             html, body {
-                width: 54mm;
+                width: 48mm;
+                max-width: 48mm;
                 height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
