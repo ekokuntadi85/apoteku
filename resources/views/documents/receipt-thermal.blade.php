@@ -132,16 +132,18 @@
         <div class="item-section">
             @foreach($transaction->transactionDetails as $detail)
                 @php
-                    // Calculate display quantity from base unit quantity
-                    $displayQty = $detail->quantity / ($detail->productUnit->conversion_factor ?? 1);
-                    // Recalculate subtotal: display quantity * price per sold unit
+                    $isPos = $transaction->type === 'pos';
+                    $conversionFactor = $detail->productUnit->conversion_factor ?? 1;
+                    // Calculate display quantity: POS stores quantity in base units, Invoice stores it in selected units
+                    $displayQty = $isPos ? ($detail->quantity / $conversionFactor) : $detail->quantity;
+                    // Calculate subtotal
                     $subtotal = $displayQty * $detail->price;
                 @endphp
                 <div class="item-row">
                     <p class="item-name">{{ $detail->product->name }}</p>
                     <div class="item-breakdown">
                         <span class="item-details">
-                            {{ rtrim(rtrim(number_format($displayQty, 2, ',', '.'), '0'), ',') }} {{ $detail->productUnit->name ?? $detail->product->baseUnit->name }} x {{ number_format($detail->price, 0, ',', '.') }}
+                            {{ rtrim(rtrim(number_format($displayQty, 2, ',', '.'), '0'), ',') }} {{ $detail->productUnit->name ?? ($detail->product->baseUnit->name ?? '') }} x {{ number_format($detail->price, 0, ',', '.') }}
                         </span>
                         <span class="subtotal">
                             {{ number_format($subtotal, 0, ',', '.') }}

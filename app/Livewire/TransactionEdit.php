@@ -355,18 +355,23 @@ class TransactionEdit extends Component
             $transaction->transactionDetails()->whereNotIn('id', $currentDetailIds)->delete();
 
             foreach ($this->transaction_items as $item) {
-                $detail = $transaction->transactionDetails()->updateOrCreate(
-                    ['id' => $item['id'] ?? null],
-                    [
-                        'product_id' => $item['product_id'],
-                        'product_unit_id' => $item['product_unit_id'],
-                        'quantity' => $item['quantity'],
-                        'price' => $item['price'],
-                    ]
-                );
+                $detail = TransactionDetail::withoutEvents(function () use ($transaction, $item) {
+                    return $transaction->transactionDetails()->updateOrCreate(
+                        ['id' => $item['id'] ?? null],
+                        [
+                            'product_id' => $item['product_id'],
+                            'product_unit_id' => $item['product_unit_id'],
+                            'quantity' => $item['quantity'],
+                            'price' => $item['price'],
+                        ]
+                    );
+                });
 
                 $product = Product::find($item['product_id']);
-                $remainingQuantity = $item['quantity'];
+                $isPos = $this->type === 'pos';
+                $unit = \App\Models\ProductUnit::find($item['product_unit_id']);
+                $conversionFactor = $unit ? $unit->conversion_factor : 1;
+                $remainingQuantity = $isPos ? $item['quantity'] : ($item['quantity'] * $conversionFactor);
 
                 $batches = $product->productBatches()->where('stock', '>', 0)->orderBy('expiration_date', 'asc')->get();
 

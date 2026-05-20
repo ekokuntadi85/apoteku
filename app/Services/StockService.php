@@ -13,7 +13,9 @@ class StockService
     public function decrementStock(TransactionDetail $detail): void
     {
         DB::transaction(function () use ($detail) {
-            $quantityToDecrement = $detail->quantity;
+            $isPos = $detail->transaction->type === 'pos';
+            $conversionFactor = $detail->productUnit->conversion_factor ?? 1;
+            $quantityToDecrement = $isPos ? $detail->quantity : ($detail->quantity * $conversionFactor);
             $product = $detail->product;
 
             // Calculate total available stock for the product

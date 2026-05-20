@@ -25,7 +25,7 @@ class DocumentController extends Controller
 
     public function printInvoice($transactionId)
     {
-        $transaction = Transaction::with(['transactionDetails.product', 'customer', 'user'])->findOrFail($transactionId);
+        $transaction = Transaction::with(['transactionDetails.product.baseUnit', 'transactionDetails.productUnit', 'customer', 'user'])->findOrFail($transactionId);
         $agent = new Agent();
 
         if ($agent->isMobile()) {

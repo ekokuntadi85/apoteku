@@ -82,12 +82,19 @@
         <table class="items">
             <tbody>
                 @foreach($transaction->transactionDetails as $detail)
+                @php
+                    $isPos = $transaction->type === 'pos';
+                    $conversionFactor = $detail->productUnit->conversion_factor ?? 1;
+                    $displayQty = $isPos ? ($detail->quantity / $conversionFactor) : $detail->quantity;
+                    $unitName = $detail->productUnit->name ?? ($detail->product->baseUnit->name ?? '');
+                    $subtotal = $displayQty * $detail->price;
+                @endphp
                 <tr>
                     <td colspan="2">{{ $detail->product->name }}</td>
                 </tr>
                 <tr>
-                    <td>{{ $detail->quantity }} x Rp {{ number_format($detail->price, 0) }}</td>
-                    <td class="text-right">Rp {{ number_format($detail->quantity * $detail->price, 0) }}</td>
+                    <td>{{ rtrim(rtrim(number_format($displayQty, 2, ',', '.'), '0'), ',') }} {{ $unitName }} x Rp {{ number_format($detail->price, 0, ',', '.') }}</td>
+                    <td class="text-right">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
