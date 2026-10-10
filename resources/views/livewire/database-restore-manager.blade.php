@@ -2,7 +2,7 @@
 <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden mt-8">
     <div class="px-4 sm:px-6 py-5 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Restore Database</h2>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Pilih file backup SQL (.sql) untuk me-restore database. Semua data yang ada saat ini akan ditimpa.</p>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Pilih file backup SQL (.sql) atau terkompresi (.sql.gz) untuk me-restore database. Semua data yang ada saat ini akan ditimpa.</p>
     </div>
 
     <div class="p-4 sm:p-6">
@@ -29,6 +29,10 @@
                 Informasi Penting
             </p>
             <p class="mt-2 text-sm">
+                Format yang didukung: <strong>SQL plain (.sql)</strong> dan <strong>terkompresi (.sql.gz)</strong>.
+                File .gz akan otomatis di-decompress di server sebelum restore.
+            </p>
+            <p class="mt-2 text-sm">
                 Setelah restore berhasil, sistem akan <strong>otomatis menjalankan migration</strong> untuk memastikan struktur database up-to-date. 
                 Ini akan menambahkan kolom atau tabel baru yang mungkin belum ada di backup lama.
             </p>
@@ -39,7 +43,7 @@
 
         <form wire:submit.prevent="restoreDatabase">
             <div class="mb-4">
-                <label for="sqlFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">File Backup SQL</label>
+                <label for="sqlFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">File Backup SQL (.sql / .sql.gz)</label>
                 
                 {{-- File Input with Custom Styling --}}
                 <div class="relative">
@@ -47,7 +51,7 @@
                         type="file" 
                         id="sqlFile" 
                         wire:model="sqlFile" 
-                        accept=".sql,.txt,.bin"
+                        accept=".sql,.sql.gz,.gz,.txt,.bin"
                         class="mt-1 block w-full text-sm text-gray-900 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300 dark:hover:file:bg-indigo-900/50 transition-all duration-200"
                     >
                     
@@ -84,7 +88,11 @@
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-green-800 dark:text-green-200">File berhasil dipilih</p>
                                 <div class="mt-1 text-sm text-green-700 dark:text-green-300">
-                                    <p class="font-semibold truncate">📄 {{ $sqlFile->getClientOriginalName() }}</p>
+                                    <p class="font-semibold truncate">📄 {{ $sqlFile->getClientOriginalName() }}
+                                        @if(str_ends_with(strtolower($sqlFile->getClientOriginalName()), '.gz'))
+                                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">Terkompresi (gz)</span>
+                                        @endif
+                                    </p>
                                     <p class="text-xs mt-1">
                                         Ukuran: <span class="font-medium">{{ number_format($sqlFile->getSize() / 1024 / 1024, 2) }} MB</span>
                                     </p>

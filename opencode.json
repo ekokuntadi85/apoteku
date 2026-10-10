@@ -1,0 +1,157 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "trustisgold": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "TrustIsGold",
+      "options": {
+        "baseURL": "https://api.trustisgold.web.id/v1",
+        "apiKey": "{env:TRUSTISGOLD_API_KEY}"
+      },
+      "models": {
+        "ff/muse-spark-1.3-contributor": {
+          "name": "Muse Spark 1.3 Contributor",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          }
+        },
+        "ff/muse-spark-1.2-contributor": {
+          "name": "Muse Spark 1.2 Contributor",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          }
+        },
+        "ff/muse-spark-1.3-contributor-UNCENSORED": {
+          "name": "Muse Spark 1.3 Uncensored",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          }
+        },
+        "ff/big-pickle": {
+          "name": "Big Pickle",
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        },
+        "ff/longcat-2.5-preview": {
+          "name": "Longcat 2.5 Preview",
+          "limit": {
+            "context": 1000000,
+            "output": 131072
+          }
+        },
+        "ff/space-bunny": {
+          "name": "Space Bunny",
+          "limit": {
+            "context": 1048576,
+            "output": 524288
+          }
+        },
+        "ff/deepseek-v4.1-flash": {
+          "name": "DeepSeek V4.1 Flash",
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        },
+        "ff/deepseek-v4.1-flash-UNCENSORED": {
+          "name": "DeepSeek V4.1 Flash Uncensored",
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        },
+        "ff/nemotron-3-ultra": {
+          "name": "Nemotron 3 Ultra",
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        },
+        "ff/nemotron-3-ultra-UNCENSORED": {
+          "name": "Nemotron 3 Ultra Uncensored",
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        },
+        "ff/mimo-v2.6-flash-UNCENSORED": {
+          "name": "MiMo V2.6 Flash Uncensored",
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        },
+        "ff/atria-dawn-preview": {
+          "name": "Atria Dawn Preview",
+          "limit": {
+            "context": 128000,
+            "output": 32000
+          }
+        },
+        "ff/Qwen3.8-Max": {
+          "name": "Qwen 3.8 Max",
+          "limit": {
+            "context": 128000,
+            "output": 32000
+          }
+        },
+        "ff/ling-3-1-flash": {
+          "name": "Ling 3.1 Flash",
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "ff/step-5-preview": {
+          "name": "Step 5 Preview",
+          "limit": {
+            "context": 1000000,
+            "output": 65536
+          }
+        },
+        "ff/claude-haiku-5.5": {
+          "name": "Claude Haiku 5.5",
+          "limit": {
+            "context": 200000,
+            "output": 8192
+          }
+        },
+        "ff/claude-opus-5": {
+          "name": "Claude Opus 5",
+          "limit": {
+            "context": 200000,
+            "output": 8192
+          }
+        },
+        "ff/claude-opus-5.5": {
+          "name": "Claude Opus 5.5",
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        },
+        "ff/HACK-NASA": {
+          "name": "HACK-NASA",
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        },
+        "ff/glm-5.3-flash": {
+          "name": "GLM 5.3 Flash"
+        },
+        "ff/deepseek-v4.1": {
+          "name": "DeepSeek V4.1"
+        },
+        "ff/deepseek-v4.1-flash-Backup": {
+          "name": "DeepSeek V4.1 Flash Backup"
+        }
+      }
+    }
+  }
+}
